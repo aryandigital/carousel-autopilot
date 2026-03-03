@@ -1,11 +1,11 @@
 // ============================================
-// Image Generator — Google Gemini (Nano Banana)
+// Image Generator — Premium SVG Renderer
 // ============================================
-// Uses Gemini 2.0 Flash's native image generation
+// Generates stunning, text-perfect SVG carousels
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
 // Premium color palettes for carousel slides
 const PALETTES = [
@@ -18,211 +18,155 @@ const PALETTES = [
 ];
 
 /**
- * Generate carousel slide images using Gemini image generation
- * @param {Object} carouselData - Structured copy JSON from copywriter
- * @param {string} outputDir - Directory to save images
- * @returns {Promise<string[]>} Array of image file paths
+ * Generate carousel slide images using Premium SVG templates
  */
 async function generateSlideImages(carouselData, outputDir) {
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🎨 IMAGE GENERATION');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) throw new Error('GOOGLE_AI_API_KEY not set in .env');
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Use Gemini 2.0 Flash for image generation (Nano Banana)
-    const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash-exp',
-        generationConfig: {
-            responseModalities: ['image', 'text'],
-        },
-    });
-
-    // Pick a random palette for consistency across slides
     const palette = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-    console.log(`   Using "${palette.name}" color palette`);
+    console.log(`   Using premium "${palette.name}" color palette`);
 
     fs.mkdirSync(outputDir, { recursive: true });
-
     const imagePaths = [];
+
+    // Load profile pic as base64
+    let profileB64 = '';
+    const profilePath = path.join(__dirname, '..', 'src', 'assets', 'profile.jpg');
+    try {
+        if (fs.existsSync(profilePath)) {
+            const img = fs.readFileSync(profilePath);
+            profileB64 = `data:image/jpeg;base64,${img.toString('base64')}`;
+        }
+    } catch (e) {
+        console.warn('   ⚠️  Profile picture not found at src/assets/profile.jpg');
+    }
 
     for (const slide of carouselData.slides) {
         const slideNum = slide.slideNumber;
         console.log(`   Generating slide ${slideNum}/${carouselData.slides.length}...`);
 
-        const prompt = buildSlidePrompt(slide, palette, carouselData.topic);
-
         try {
-            const result = await model.generateContent(prompt);
-            const response = result.response;
-
-            // Extract image from response
-            let imageData = null;
-            if (response.candidates && response.candidates[0]) {
-                const parts = response.candidates[0].content.parts;
-                for (const part of parts) {
-                    if (part.inlineData) {
-                        imageData = part.inlineData;
-                        break;
-                    }
-                }
-            }
-
-            if (imageData) {
-                const imagePath = path.join(outputDir, `slide_${String(slideNum).padStart(2, '0')}.png`);
-                const buffer = Buffer.from(imageData.data, 'base64');
-                fs.writeFileSync(imagePath, buffer);
-                imagePaths.push(imagePath);
-                console.log(`   ✅ Slide ${slideNum} saved`);
-            } else {
-                console.warn(`   ⚠️  No image in response for slide ${slideNum}, using fallback`);
-                const fallbackPath = await generateFallbackSlide(slide, palette, outputDir, slideNum);
-                imagePaths.push(fallbackPath);
-            }
-
-            // Rate limit: wait between generations
-            await new Promise((r) => setTimeout(r, 2000));
+            const imagePath = await generatePremiumSlide(slide, palette, outputDir, slideNum, carouselData.slides.length, profileB64);
+            imagePaths.push(imagePath);
+            console.log(`   ✅ Slide ${slideNum} rendered and saved`);
         } catch (err) {
             console.error(`   ❌ Slide ${slideNum} generation failed: ${err.message}`);
-            const fallbackPath = await generateFallbackSlide(slide, palette, outputDir, slideNum);
-            imagePaths.push(fallbackPath);
         }
     }
 
-    console.log(`\n   ✅ Generated ${imagePaths.length} slide images`);
+    console.log(`\n   ✅ Generated ${imagePaths.length} premium slide images`);
     return imagePaths;
 }
 
 /**
- * Build a detailed image generation prompt for a slide
+ * Generate a stunning high-quality slide using SVG
  */
-function buildSlidePrompt(slide, palette, topic) {
-    const isHook = slide.type === 'hook';
-    const isCta = slide.type === 'cta';
-
-    let designInstructions = '';
-
-    if (isHook) {
-        designInstructions = `Create a stunning LinkedIn carousel COVER SLIDE with these specifications:
-- Dimensions: Portrait orientation (1080x1350 pixels ratio)
-- Background: Rich dark gradient using ${palette.bg} with subtle geometric patterns or abstract shapes
-- Main headline text: "${slide.headline}" — displayed in LARGE, bold, modern sans-serif typography (like Inter or Montserrat), color ${palette.accent}
-- The text should be the hero element, centered and commanding
-- Add a subtle "Swipe →" indicator at the bottom in ${palette.subtle}
-- Add subtle decorative elements: thin lines, dots, or abstract geometric shapes in ${palette.accent} with low opacity
-- Style: Premium, modern, clean — like a high-end design agency
-- NO photos of people, NO stock imagery — pure typography and design elements
-- The overall feel should be BOLD, STRIKING, and PROFESSIONAL`;
-    } else if (isCta) {
-        designInstructions = `Create a LinkedIn carousel CTA (Call to Action) SLIDE:
-- Dimensions: Portrait orientation (1080x1350 pixels ratio)
-- Background: Gradient from ${palette.bg} to a slightly lighter shade
-- Headline: "${slide.headline}" in bold ${palette.accent} colored text
-- Body text: "${slide.body || ''}" in clean ${palette.text} colored text
-- Add a visual CTA button or highlighted box area
-- Include social engagement icons subtly (like, comment, share symbols)
-- Style: Clean, premium, inviting — makes people want to engage
-- NO photos — typography and design elements only`;
-    } else {
-        designInstructions = `Create a LinkedIn carousel CONTENT SLIDE:
-- Dimensions: Portrait orientation (1080x1350 pixels ratio)
-- Background: Solid ${palette.bg} with very subtle texture or gradient
-- Headline: "${slide.headline}" in bold ${palette.accent} text at the top
-- Body content: "${slide.body || ''}" — displayed in clean, readable ${palette.text} text
-- Use clear visual hierarchy: headline > body > supporting elements
-- If there are bullet points or numbers, make them visually distinct with ${palette.accent} colored markers
-- Add subtle decorative elements on the edges (thin lines, corner accents in ${palette.subtle})
-- Style: Clean, minimal, easy to read — like a premium presentation slide
-- NO photos — pure typography and geometric design elements`;
-    }
-
-    return `${designInstructions}
-
-CRITICAL REQUIREMENTS:
-- The text MUST be perfectly readable and spelled correctly
-- Use premium modern typography — clean sans-serif fonts
-- The design should look like it was made by a professional carousel designer
-- Topic context: "${topic}"
-- This is slide ${slide.slideNumber} of a LinkedIn carousel series`;
-}
-
-/**
- * Generate a fallback slide using SVG when AI image generation fails
- */
-async function generateFallbackSlide(slide, palette, outputDir, slideNum) {
-    const sharp = require('sharp');
-
+async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSlides, profileB64) {
     const headline = escapeXml(slide.headline || '');
     const body = escapeXml(slide.body || '');
     const isHook = slide.type === 'hook';
     const isCta = slide.type === 'cta';
 
-    // Break text into lines for SVG
-    const headlineLines = wrapText(headline, isHook ? 20 : 28);
-    const bodyLines = wrapText(body, 38);
+    // Break text into lines
+    let headlineMarkup = '';
+    let bodyMarkup = '';
 
-    const headlineFontSize = isHook ? 64 : 48;
-    const bodyFontSize = 28;
-    const headlineY = isHook ? 450 : 200;
-    const bodyY = headlineY + headlineLines.length * (headlineFontSize + 12) + 60;
+    const fontString = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-    const headlineMarkup = headlineLines
-        .map((line, i) => `<text x="540" y="${headlineY + i * (headlineFontSize + 12)}" 
-      font-family="Arial, Helvetica, sans-serif" font-size="${headlineFontSize}" font-weight="bold"
-      fill="${palette.accent}" text-anchor="middle">${line}</text>`)
-        .join('\n');
+    if (isHook) {
+        const headlineLines = wrapText(headline, 16);
+        headlineMarkup = headlineLines
+            .map((line, i) => {
+                const color = i === Math.floor(headlineLines.length / 2) ? palette.accent : '#ffffff';
+                return `<tspan x="120" dy="${i === 0 ? 0 : 90}" fill="${color}">${line}</tspan>`;
+            }).join('\n');
 
-    const bodyMarkup = bodyLines
-        .map((line, i) => `<text x="540" y="${bodyY + i * (bodyFontSize + 10)}" 
-      font-family="Arial, Helvetica, sans-serif" font-size="${bodyFontSize}" font-weight="400"
-      fill="${palette.text}" text-anchor="middle">${line}</text>`)
-        .join('\n');
+        headlineMarkup = `<text x="120" y="450" font-family="${fontString}" font-size="76" font-weight="900" fill="#ffffff" letter-spacing="-1">${headlineMarkup}</text>`;
+    } else {
+        const headlineLines = wrapText(headline, 30);
+        const cardY = 300;
 
-    const swipeText = isHook
-        ? `<text x="540" y="1250" font-family="Arial" font-size="24" fill="${palette.subtle}" text-anchor="middle" opacity="0.7">Swipe →</text>`
-        : '';
+        let currentY = cardY + 120;
+        headlineMarkup = headlineLines
+            .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 60}">${line}</tspan>`)
+            .join('\n');
 
-    const ctaBox = isCta
-        ? `<rect x="240" y="${bodyY + bodyLines.length * 38 + 40}" width="600" height="70" rx="35" fill="${palette.accent}" opacity="0.9"/>
-       <text x="540" y="${bodyY + bodyLines.length * 38 + 83}" font-family="Arial" font-size="24" font-weight="bold" fill="${palette.bg}" text-anchor="middle">Follow for More 🚀</text>`
+        headlineMarkup = `<text x="160" y="${currentY}" font-family="${fontString}" font-size="44" font-weight="bold" fill="${palette.accent}">${headlineMarkup}</text>`;
+
+        currentY += (headlineLines.length * 60) + 40;
+
+        if (body) {
+            const bodyLines = wrapText(body, 36);
+            bodyMarkup = bodyLines
+                .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 50}">${line}</tspan>`)
+                .join('\n');
+            bodyMarkup = `<text x="160" y="${currentY}" font-family="${fontString}" font-size="34" font-weight="400" fill="rgba(255,255,255,0.9)" line-height="1.6">${bodyMarkup}</text>`;
+        }
+    }
+
+    const swipeText = slideNum < totalSlides
+        ? `<rect x="800" y="1270" width="160" height="40" rx="20" fill="${palette.accent}" opacity="0.1"/>
+           <text x="880" y="1296" font-family="${fontString}" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle">SWIPE →</text>`
+        : `<rect x="800" y="1270" width="160" height="40" rx="20" fill="${palette.accent}" opacity="0.1"/>
+           <text x="880" y="1296" font-family="${fontString}" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle">FOLLOW +</text>`;
+
+    const imageTag = profileB64
+        ? `<image href="${profileB64}" x="120" y="80" height="80" width="80" clip-path="url(#profileClip)" preserveAspectRatio="xMidYMid slice" />`
+        : `<circle cx="160" cy="120" r="40" fill="rgba(255,255,255,0.1)" />`;
+
+    const cardHtml = (!isHook)
+        ? `<rect x="100" y="300" width="880" height="700" rx="32" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>`
         : '';
 
     const svg = `<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:${palette.bg}"/>
-        <stop offset="100%" style="stop-color:${lightenColor(palette.bg, 15)}"/>
-      </linearGradient>
-    </defs>
-    <rect width="1080" height="1350" fill="url(#bg)"/>
-    <!-- Decorative elements -->
-    <circle cx="100" cy="100" r="200" fill="${palette.accent}" opacity="0.03"/>
-    <circle cx="980" cy="1250" r="300" fill="${palette.subtle}" opacity="0.03"/>
-    <line x1="80" y1="80" x2="80" y2="180" stroke="${palette.accent}" stroke-width="3" opacity="0.3"/>
-    <line x1="80" y1="80" x2="180" y2="80" stroke="${palette.accent}" stroke-width="3" opacity="0.3"/>
-    <line x1="1000" y1="1270" x2="1000" y2="1170" stroke="${palette.accent}" stroke-width="3" opacity="0.3"/>
-    <line x1="1000" y1="1270" x2="900" y2="1270" stroke="${palette.accent}" stroke-width="3" opacity="0.3"/>
-    <!-- Slide number -->
-    <text x="540" y="120" font-family="Arial" font-size="18" fill="${palette.subtle}" text-anchor="middle" opacity="0.5">
-      ${String(slideNum).padStart(2, '0')}
-    </text>
-    <!-- Watermark -->
-    <text x="540" y="1315" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="${palette.subtle}" text-anchor="middle" opacity="0.6">
-      @aryanrajput
-    </text>
-    <!-- Content -->
-    ${headlineMarkup}
-    ${bodyMarkup}
-    ${swipeText}
-    ${ctaBox}
-  </svg>`;
+        <defs>
+            <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:${palette.bg}"/>
+                <stop offset="100%" style="stop-color:#05050A"/>
+            </linearGradient>
+            
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="150" result="blur" />
+            </filter>
+            
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
+            </pattern>
+            
+            <clipPath id="profileClip">
+                <circle cx="160" cy="120" r="40" />
+            </clipPath>
+        </defs>
+
+        <!-- Background -->
+        <rect width="1080" height="1350" fill="url(#bgGrad)"/>
+        <circle cx="100" cy="200" r="450" fill="${palette.accent}" opacity="0.12" filter="url(#glow)"/>
+        <circle cx="900" cy="1100" r="500" fill="${palette.subtle}" opacity="0.1" filter="url(#glow)"/>
+        <rect width="1080" height="1350" fill="url(#grid)" />
+        
+        <!-- Header -->
+        ${imageTag}
+        <text x="220" y="115" font-family="${fontString}" font-size="28" font-weight="bold" fill="#ffffff">Aryan Rajput</text>
+        <text x="220" y="145" font-family="${fontString}" font-size="20" fill="rgba(255,255,255,0.6)">@aryanrajput</text>
+        
+        <rect x="830" y="95" width="130" height="50" rx="25" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="895" y="128" font-family="monospace" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle" letter-spacing="2">${String(slideNum).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}</text>
+
+        <!-- Main Content Area -->
+        ${cardHtml}
+        ${headlineMarkup}
+        ${bodyMarkup}
+
+        <!-- Footer -->
+        <line x1="120" y1="1250" x2="960" y2="1250" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+        <text x="120" y="1300" font-family="${fontString}" font-size="20" font-weight="600" fill="rgba(255,255,255,0.4)" letter-spacing="2" text-transform="uppercase">Daily Insights</text>
+        ${swipeText}
+    </svg>`;
 
     const imagePath = path.join(outputDir, `slide_${String(slideNum).padStart(2, '0')}.png`);
     await sharp(Buffer.from(svg)).png().toFile(imagePath);
-    console.log(`   ↪ Fallback slide ${slideNum} generated`);
     return imagePath;
 }
 
@@ -251,14 +195,6 @@ function escapeXml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
-}
-
-function lightenColor(hex, percent) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const r = Math.min(255, (num >> 16) + percent);
-    const g = Math.min(255, ((num >> 8) & 0x00ff) + percent);
-    const b = Math.min(255, (num & 0x0000ff) + percent);
-    return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
 }
 
 module.exports = { generateSlideImages };
