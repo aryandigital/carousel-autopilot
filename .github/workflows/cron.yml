@@ -1,0 +1,18 @@
+name: Daily LinkedIn Carousel Cron
+
+on:
+  schedule:
+    # 03:30, 07:30, 12:30 UTC = 09:00, 13:00, 18:00 IST
+    - cron: '30 3,7,12 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  trigger-render-webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webhook and Wait for Wakeup
+        # Render free tier takes 30-60s to wake up. We use --max-time 150 to wait up to 2.5 minutes without dropping the connection.
+        run: |
+          curl -i -X GET "https://carousel-autopilot.onrender.com/api/cron?secret=${{ secrets.CRON_SECRET }}" \
+          --connect-timeout 60 \
+          --max-time 150

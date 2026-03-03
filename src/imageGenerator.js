@@ -60,6 +60,57 @@ async function generateSlideImages(carouselData, outputDir) {
     return imagePaths;
 }
 
+function getIsolated3DShape(palette, type = 0) {
+    if (type === 0) {
+        // Isometric 3D Glass Cube
+        return `
+        <g transform="translate(850, 250) scale(1.5)">
+            <defs>
+                <linearGradient id="cubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:${palette.accent};stop-opacity:0.9"/>
+                    <stop offset="100%" style="stop-color:${palette.accent};stop-opacity:0.4"/>
+                </linearGradient>
+                <linearGradient id="cubeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:${palette.subtle};stop-opacity:0.8"/>
+                    <stop offset="100%" style="stop-color:${palette.subtle};stop-opacity:0.2"/>
+                </linearGradient>
+                <linearGradient id="cubeRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.15"/>
+                    <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.0"/>
+                </linearGradient>
+                <filter id="cubeDropShadow" x="-20%" y="-20%" width="150%" height="150%">
+                    <feDropShadow dx="0" dy="30" stdDeviation="20" flood-color="${palette.bg}" flood-opacity="0.8"/>
+                </filter>
+            </defs>
+            <g filter="url(#cubeDropShadow)">
+                <!-- Left Face -->
+                <path d="M 0 0 L -60 30 L -60 90 L 0 60 Z" fill="url(#cubeLeft)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+                <!-- Right Face -->
+                <path d="M 0 0 L 60 30 L 60 90 L 0 60 Z" fill="url(#cubeRight)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+                <!-- Top Face -->
+                <path d="M 0 0 L -60 30 L 0 60 L 60 30 Z" transform="translate(0, -60)" fill="url(#cubeTop)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+            </g>
+        </g>`;
+    } else {
+        // Floating 3D Spline Sphere
+        return `
+        <g transform="translate(850, 250) scale(1.5)">
+            <defs>
+                <radialGradient id="sphereGrad" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9"/>
+                    <stop offset="30%" style="stop-color:${palette.accent};stop-opacity:0.8"/>
+                    <stop offset="100%" style="stop-color:${palette.bg};stop-opacity:0.1"/>
+                </radialGradient>
+                <filter id="sphereGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="20" dy="40" stdDeviation="25" flood-color="${palette.bg}" flood-opacity="0.9"/>
+                </filter>
+            </defs>
+            <circle cx="0" cy="0" r="70" fill="url(#sphereGrad)" filter="url(#sphereGlow)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+            <ellipse cx="-15" cy="-25" rx="20" ry="10" transform="rotate(-30 -15 -25)" fill="#ffffff" opacity="0.6"/>
+        </g>`;
+    }
+}
+
 /**
  * Generate a stunning high-quality slide using SVG
  */
@@ -74,6 +125,10 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
     let bodyMarkup = '';
 
     const fontString = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+    // Select dynamic isolated 3D image graphic for this slide
+    // Modulo logic to switch between the Cube (0) and Sphere (1) per slide
+    const isolatedGraphic = getIsolated3DShape(palette, slideNum % 2);
 
     if (isHook) {
         const headlineLines = wrapText(headline, 16);
@@ -145,6 +200,9 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         <circle cx="100" cy="200" r="450" fill="${palette.accent}" opacity="0.12" filter="url(#glow)"/>
         <circle cx="900" cy="1100" r="500" fill="${palette.subtle}" opacity="0.1" filter="url(#glow)"/>
         <rect width="1080" height="1350" fill="url(#grid)" />
+        
+        <!-- Dynamic Isolated Graphic -->
+        ${isolatedGraphic}
         
         <!-- Header -->
         ${imageTag}

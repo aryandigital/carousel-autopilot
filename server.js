@@ -141,21 +141,21 @@ app.get('/api/outputs', (req, res) => {
 });
 
 // Cron endpoint (for external cron services like cron-job.org)
-app.get('/api/cron', async (req, res) => {
+app.get('/api/cron', (req, res) => {
     const secret = req.query.secret;
     if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
         return res.status(403).json({ error: 'Invalid secret' });
     }
 
     if (pipelineStatus.running) {
-        return res.json({ message: 'Pipeline already running' });
+        return res.status(409).json({ message: 'Pipeline already running' });
     }
 
     pipelineStatus.running = true;
-    res.json({ message: 'Cron triggered — pipeline starting' });
+    res.status(202).json({ message: 'Cron triggered — pipeline started asynchronously' });
 
-    try {
-        const result = await runPipeline({ dryRun: false });
+    // Fire and forget: run in background to prevent webhook timeout
+    runPipeline({ dryRun: false }).then(result => {
         pipelineStatus.lastRun = new Date().toISOString();
         pipelineStatus.lastResult = result;
         pipelineStatus.history.unshift({
@@ -166,11 +166,11 @@ app.get('/api/cron', async (req, res) => {
             slideCount: result.steps?.copy?.slideCount || 0,
             published: result.steps?.publish?.success || false,
         });
-    } catch (err) {
-        pipelineStatus.lastResult = { status: 'failed', error: err.message };
-    } finally {
         pipelineStatus.running = false;
-    }
+    }).catch(err => {
+        pipelineStatus.lastResult = { status: 'failed', error: err.message };
+        pipelineStatus.running = false;
+    });
 });
 
 // ── Local Cron (optional — for when running locally) ──
