@@ -3,7 +3,7 @@
 // ============================================
 // Uses Google Gemini API to generate carousel copy
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 
 const SYSTEM_PROMPT = `You are an elite LinkedIn carousel copywriter who combines the methods of Chris Do (The Futur), Justin Welsh, and Jasmin Alic.
 
@@ -63,11 +63,10 @@ async function generateCarouselCopy(trend) {
     console.log('✍️  COPYWRITING ENGINE');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    const apiKey = process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) throw new Error('GOOGLE_AI_API_KEY not set in .env');
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new Error('GROQ_API_KEY not set in .env');
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const groq = new Groq({ apiKey });
 
     const prompt = `Create a viral LinkedIn carousel (8-9 slides) about this trending topic:
 
@@ -80,20 +79,20 @@ The carousel should educate, inspire, and drive engagement. Make it relevant for
 Remember: respond ONLY with valid JSON.`;
 
     console.log(`   Topic: "${trend.title}"`);
-    console.log('   Generating copy with Gemini...');
+    console.log('   Generating copy with Groq (llama-3.3-70b-versatile)...');
 
-    const result = await model.generateContent({
-        contents: [
-            { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\n' + prompt }] },
+    const result = await groq.chat.completions.create({
+        messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: prompt }
         ],
-        generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 2000,
-            responseMimeType: 'application/json',
-        },
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.8,
+        max_completion_tokens: 2000,
+        response_format: { type: 'json_object' }
     });
 
-    const text = result.response.text();
+    const text = result.choices[0]?.message?.content || "";
     let carouselData;
 
     try {
