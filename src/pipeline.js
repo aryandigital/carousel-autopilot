@@ -45,8 +45,27 @@ async function runPipeline(options = {}) {
             throw new Error('No trends found — check internet connection');
         }
 
-        // Pick trend
-        const selectedTrend = trends[Math.min(trendIndex, trends.length - 1)];
+        // --- Deduplication Logic ---
+        const usedTopics = new Set();
+        try {
+            const outputs = fs.readdirSync(path.join(process.cwd(), 'output'));
+            for (const dir of outputs) {
+                const resultsPath = path.join(process.cwd(), 'output', dir, 'pipeline_results.json');
+                if (fs.existsSync(resultsPath)) {
+                    const data = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+                    if (data.steps?.selectedTrend?.title) {
+                        usedTopics.add(data.steps.selectedTrend.title.toLowerCase().trim());
+                    }
+                }
+            }
+        } catch (e) {
+            // Directory might not exist yet, ignore
+        }
+
+        const freshTrends = trends.filter(t => !usedTopics.has(t.title.toLowerCase().trim()));
+        const selectedTrend = freshTrends.length > 0 ? freshTrends[trendIndex] || freshTrends[0] : trends[0];
+
+        console.log(`   Selected fresh trend: "${selectedTrend.title}"`);
         results.steps.selectedTrend = selectedTrend;
 
         // ── Step 2: Generate Carousel Copy ──

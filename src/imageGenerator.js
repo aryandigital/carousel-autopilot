@@ -126,9 +126,34 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
 
     const fontString = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-    // Select dynamic isolated 3D image graphic for this slide
-    // Modulo logic to switch between the Cube (0) and Sphere (1) per slide
-    const isolatedGraphic = getIsolated3DShape(palette, slideNum % 2);
+    // Select dynamic isolated Lucide icon for this slide
+    let isolatedGraphic = '';
+    const iconName = slide.icon || 'zap';
+    try {
+        const fetch = global.fetch || require('node-fetch');
+        const res = await fetch(`https://api.iconify.design/lucide/${iconName}.svg`);
+        if (res.ok) {
+            const svgText = await res.text();
+            const match = svgText.match(/<svg[^>]*>([\s\S]*?)<\/svg>/);
+            if (match && match[1]) {
+                // Lucide icons are 24x24. We scale them by 20 to 480x480.
+                // We use stroke-width 1.2 so it remains elegant at scale.
+                isolatedGraphic = `
+                <g transform="translate(680, 150) scale(20)" opacity="0.15">
+                    <g fill="none" stroke="${palette.accent}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+                        ${match[1]}
+                    </g>
+                </g>`;
+            }
+        }
+    } catch (e) {
+        console.warn(`   ⚠️  Failed to fetch icon '${iconName}'. Using fallback.`);
+    }
+
+    // Fallback to our custom 3D geometric shapes if the fetch fails or icon doesn't exist
+    if (!isolatedGraphic) {
+        isolatedGraphic = getIsolated3DShape(palette, slideNum % 2);
+    }
 
     if (isHook) {
         const headlineLines = wrapText(headline, 16);

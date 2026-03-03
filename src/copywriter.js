@@ -58,14 +58,15 @@ RESPOND ONLY WITH VALID JSON in this exact format:
   "topic": "the main topic",
   "hook": "the hook headline for slide 1",
   "slides": [
-    { "slideNumber": 1, "type": "hook", "headline": "...", "subtitle": "Swipe →" },
-    { "slideNumber": 2, "type": "interest", "headline": "...", "body": "..." },
+    { "slideNumber": 1, "type": "hook", "headline": "...", "subtitle": "Swipe →", "icon": "rocket" },
+    { "slideNumber": 2, "type": "interest", "headline": "...", "body": "...", "icon": "brain" },
     ...
-    { "slideNumber": 10, "type": "cta", "headline": "...", "body": "..." }
+    { "slideNumber": 10, "type": "cta", "headline": "...", "body": "...", "icon": "zap" }
   ],
   "caption": "Full Jasmin Alic style post caption here...",
   "hashtags": ["#AI", "#Marketing", ...]
-}`;
+}
+(For the 'icon' field, provide ONLY a valid singular standard Lucide icon name that fits the slide's theme, e.g. 'rocket', 'brain', 'target', 'trending-up', 'check-circle', 'shield', 'zap', 'lightbulb', 'users'.)`;
 
 /**
  * Generate carousel copy from a trending topic
