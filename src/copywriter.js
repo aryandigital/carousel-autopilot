@@ -39,6 +39,16 @@ COPYWRITING RULES:
 - Each slide should make the reader NEED to see the next one.
 - No fluff, no filler. Every word earns its place.
 
+CAPTION RULES (JASMIN ALIC STYLE):
+- The 'caption' field must be a full LinkedIn post description written in the style of Jasmin Alic.
+- Start with a punchy 1-liner hook (all lowercase or sentence case).
+- Double space between every single line.
+- Write in short, choppy, rhythmic sentences.
+- Use simple words (5th-grade reading level).
+- Create a conversational flow.
+- End with a question to drive comments.
+- Include 3-5 relevant hashtags at the very bottom.
+
 RESPOND ONLY WITH VALID JSON in this exact format:
 {
   "topic": "the main topic",
@@ -49,7 +59,7 @@ RESPOND ONLY WITH VALID JSON in this exact format:
     ...
     { "slideNumber": 8, "type": "cta", "headline": "...", "body": "..." }
   ],
-  "caption": "LinkedIn post caption (first 3 lines are visible before 'see more'). Include 3-5 hashtags.",
+  "caption": "Full Jasmin Alic style post caption here...",
   "hashtags": ["#AI", "#Marketing", ...]
 }`;
 
