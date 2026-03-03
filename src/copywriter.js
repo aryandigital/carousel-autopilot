@@ -3,7 +3,7 @@
 // ============================================
 // Uses Google Gemini API to generate carousel copy
 
-const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const SYSTEM_PROMPT = `You are an elite LinkedIn carousel copywriter who combines the methods of Chris Do (The Futur), Justin Welsh, and Jasmin Alic.
 
@@ -78,10 +78,14 @@ async function generateCarouselCopy(trend) {
     console.log('✍️  COPYWRITING ENGINE');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error('GROQ_API_KEY not set in .env');
-
-    const groq = new Groq({ apiKey });
+    // Pick a random creative angle to force variety
+    const angles = [
+        'contrarian hot take', 'beginner-friendly explainer', 'advanced strategy breakdown',
+        'lessons from failure', 'surprising data insights', 'future predictions',
+        'practical step-by-step guide', 'myth-busting', 'behind-the-scenes look',
+        'comparison of approaches', 'personal story framework', 'industry disruption angle'
+    ];
+    const chosenAngle = angles[Math.floor(Math.random() * angles.length)];
 
     const prompt = `Create a viral LinkedIn carousel (EXACTLY 10 slides) about this trending topic:
 
@@ -89,31 +93,147 @@ TOPIC: ${trend.title}
 CONTEXT: ${trend.context || 'No additional context'}
 SOURCE: ${trend.meta || trend.source}
 
+CREATIVE ANGLE: Use a "${chosenAngle}" approach. Do NOT just summarize the topic — find a surprising, unique, or provocative angle that makes people stop scrolling.
+
 The carousel should educate, inspire, and drive engagement. Make it relevant for professionals, entrepreneurs, and creators on LinkedIn. Use the AIDA framework to structure the slides.
 
 Remember: respond ONLY with valid JSON.`;
 
     console.log(`   Topic: "${trend.title}"`);
-    console.log('   Generating copy with Groq (llama-3.3-70b-versatile)...');
+    console.log(`   Angle: "${chosenAngle}"`);
 
-    const result = await groq.chat.completions.create({
-        messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: prompt }
-        ],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.8,
-        max_completion_tokens: 2000,
-        response_format: { type: 'json_object' }
-    });
+    let text;
 
-    const text = result.choices[0]?.message?.content || "";
+    // API Keys
+    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+
+    // 1. Try OpenRouter first (multiple free models available)
+    if (openRouterKey && !text) {
+        const orModels = [
+            'google/gemma-3-27b-it:free',
+            'meta-llama/llama-3.3-70b-instruct:free',
+            'qwen/qwen3-coder:free',
+        ];
+        // Pick a random starting model for load distribution
+        const startIdx = Math.floor(Math.random() * orModels.length);
+
+        for (let i = 0; i < orModels.length && !text; i++) {
+            const modelId = orModels[(startIdx + i) % orModels.length];
+            console.log(`   Trying OpenRouter (${modelId})...`);
+            try {
+                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${openRouterKey}`,
+                        "HTTP-Referer": "https://github.com/carousel-automation",
+                        "X-Title": "Carousel Automation AI",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": modelId,
+                        "messages": [
+                            { "role": "system", "content": SYSTEM_PROMPT },
+                            { "role": "user", "content": prompt }
+                        ]
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const raw = data.choices?.[0]?.message?.content || "";
+                    // Some models wrap JSON in <think>...</think> tags — strip those
+                    text = raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                    if (text) {
+                        console.log(`   ✅ OpenRouter (${modelId}) responded successfully`);
+                    } else {
+                        console.log(`   ⚠️  OpenRouter (${modelId}) returned empty, trying next...`);
+                    }
+                } else {
+                    const errBody = await res.text();
+                    console.log(`   ⚠️  OpenRouter (${modelId}) failed: ${res.status} — ${errBody.slice(0, 100)}`);
+                }
+            } catch (err) {
+                console.log(`   ⚠️  OpenRouter (${modelId}) error: ${err.message}`);
+            }
+        }
+    }
+
+    // 2. Fallback to Gemini
+    if (googleKey && !text) {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(googleKey);
+
+        // Try multiple models — each has separate daily quota on free tier
+        const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'];
+
+        for (const modelName of models) {
+            if (text) break;
+            console.log(`   Trying Gemini (${modelName})...`);
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            // Retry with exponential backoff
+            const maxRetries = 2;
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = await model.generateContent({
+                        contents: [
+                            { role: 'user', parts: [{ text: SYSTEM_PROMPT + '\n\n' + prompt }] }
+                        ],
+                        generationConfig: {
+                            temperature: 0.9,
+                            maxOutputTokens: 2500,
+                            responseMimeType: 'application/json',
+                        },
+                    });
+                    text = result.response.text();
+                    console.log(`   ✅ ${modelName} responded successfully`);
+                    break;
+                } catch (err) {
+                    if (err.message && err.message.includes('429') && attempt < maxRetries) {
+                        const waitSec = 20 * attempt;
+                        console.log(`   ⏳ Rate limited on ${modelName}. Retrying in ${waitSec}s...`);
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                    } else if (err.message && err.message.includes('429')) {
+                        console.log(`   ⚠️  ${modelName} quota exhausted, trying next model...`);
+                        break;
+                    } else {
+                        console.log(`   ⚠️  ${modelName} failed, trying next...`);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback to Groq if Gemini didn't produce output
+    if (!text && groqKey) {
+        console.log('   Generating copy with Groq (llama-3.3-70b-versatile)...');
+        const Groq = require('groq-sdk');
+        const groq = new Groq({ apiKey: groqKey });
+
+        const result = await groq.chat.completions.create({
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'user', content: prompt }
+            ],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.8,
+            max_completion_tokens: 2000,
+            response_format: { type: 'json_object' }
+        });
+        text = result.choices[0]?.message?.content || "";
+    }
+
+    if (!text) {
+        throw new Error('No API key available or all attempts failed. Set GOOGLE_AI_API_KEY or GROQ_API_KEY in .env');
+    }
+
     let carouselData;
-
     try {
         carouselData = JSON.parse(text);
     } catch {
-        // Try to extract JSON from the response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             carouselData = JSON.parse(jsonMatch[0]);

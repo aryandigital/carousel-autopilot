@@ -152,9 +152,37 @@ app.get('/api/cron', (req, res) => {
     }
 
     pipelineStatus.running = true;
-    res.status(202).json({ message: 'Cron triggered — pipeline started asynchronously' });
+    // Send a tiny response immediately — cron-job.org reads this and nothing else
+    res.status(202).json({ ok: true });
 
-    // Fire and forget: run in background to prevent webhook timeout
+    // ── Fully suppress ALL stdout/stderr during pipeline run ──
+    // This prevents Render from buffering massive output that triggers "output too large"
+    const origStdoutWrite = process.stdout.write.bind(process.stdout);
+    const origStderrWrite = process.stderr.write.bind(process.stderr);
+    const origLog = console.log;
+    const origWarn = console.warn;
+    const origError = console.error;
+
+    const MAX_LOG_LINES = 50;
+    const logBuffer = [];
+    const capture = (line) => { if (logBuffer.length < MAX_LOG_LINES) logBuffer.push(line); };
+
+    // Silence everything
+    process.stdout.write = (chunk) => { capture(String(chunk).slice(0, 200)); return true; };
+    process.stderr.write = (chunk) => { capture('[ERR] ' + String(chunk).slice(0, 200)); return true; };
+    console.log = (...a) => capture(a.join(' ').slice(0, 200));
+    console.warn = (...a) => capture('[W] ' + a.join(' ').slice(0, 200));
+    console.error = (...a) => capture('[E] ' + a.join(' ').slice(0, 200));
+
+    const restore = () => {
+        process.stdout.write = origStdoutWrite;
+        process.stderr.write = origStderrWrite;
+        console.log = origLog;
+        console.warn = origWarn;
+        console.error = origError;
+    };
+
+    // Fire and forget: run in background
     runPipeline({ dryRun: false }).then(result => {
         pipelineStatus.lastRun = new Date().toISOString();
         pipelineStatus.lastResult = result;
@@ -170,6 +198,9 @@ app.get('/api/cron', (req, res) => {
     }).catch(err => {
         pipelineStatus.lastResult = { status: 'failed', error: err.message };
         pipelineStatus.running = false;
+    }).finally(() => {
+        restore();
+        console.log(`[CRON] Done. ${logBuffer.length} lines captured (max ${MAX_LOG_LINES}).`);
     });
 });
 

@@ -1,24 +1,211 @@
 // ============================================
-// Image Generator — Premium SVG Renderer
+// Image Generator — AI Illustration + SVG Renderer
 // ============================================
-// Generates stunning, text-perfect SVG carousels
+// Generates stunning carousels with AI-generated illustrations
 
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-// Premium color palettes for carousel slides
+// Premium color palettes — each with a unique mood
 const PALETTES = [
-    { name: 'midnight', bg: '#0F0F1A', accent: '#6C63FF', text: '#FFFFFF', subtle: '#8B85FF' },
-    { name: 'ocean', bg: '#0A192F', accent: '#64FFDA', text: '#CCD6F6', subtle: '#45E0C0' },
-    { name: 'sunset', bg: '#1A0A2E', accent: '#FF6B6B', text: '#F0E6FF', subtle: '#FF8E53' },
-    { name: 'forest', bg: '#0D1117', accent: '#7EE787', text: '#E6EDF3', subtle: '#56D364' },
-    { name: 'royal', bg: '#13111C', accent: '#E040FB', text: '#F3E5F5', subtle: '#CE93D8' },
-    { name: 'ember', bg: '#1C1410', accent: '#FF9800', text: '#FFF3E0', subtle: '#FFB74D' },
+    { name: 'midnight', bg: '#0F0F1A', accent: '#6C63FF', text: '#FFFFFF', subtle: '#8B85FF', mood: 'deep purple cosmic' },
+    { name: 'ocean', bg: '#0A192F', accent: '#64FFDA', text: '#CCD6F6', subtle: '#45E0C0', mood: 'ocean teal dark' },
+    { name: 'sunset', bg: '#1A0A2E', accent: '#FF6B6B', text: '#F0E6FF', subtle: '#FF8E53', mood: 'warm sunset gradient' },
+    { name: 'forest', bg: '#0D1117', accent: '#7EE787', text: '#E6EDF3', subtle: '#56D364', mood: 'dark green nature' },
+    { name: 'royal', bg: '#13111C', accent: '#E040FB', text: '#F3E5F5', subtle: '#CE93D8', mood: 'royal magenta neon' },
+    { name: 'ember', bg: '#1C1410', accent: '#FF9800', text: '#FFF3E0', subtle: '#FFB74D', mood: 'amber fire warm' },
+    { name: 'arctic', bg: '#0B1628', accent: '#00B4D8', text: '#E0F7FA', subtle: '#48CAE4', mood: 'icy blue cold' },
+    { name: 'crimson', bg: '#1A0000', accent: '#FF1744', text: '#FFE0E0', subtle: '#FF5252', mood: 'deep red dramatic' },
 ];
 
 /**
- * Generate carousel slide images using Premium SVG templates
+ * Generate a beautiful procedural SVG illustration based on slide content
+ * No external API needed — creates unique abstract graphics per slide
+ */
+function generateIllustrationSVG(headline, palette, slideType, slideNum) {
+    // Generate a hash from headline for deterministic but varied shapes
+    let hash = 0;
+    for (let i = 0; i < headline.length; i++) {
+        hash = ((hash << 5) - hash + headline.charCodeAt(i)) | 0;
+    }
+    const seed = (n) => Math.abs((hash * (n + 1) * 9301 + 49297) % 233280) / 233280;
+
+    const accent = palette.accent;
+    const subtle = palette.subtle;
+
+    // Pick an illustration style based on seed
+    const styles = [
+        // Style 0: Floating orbs constellation
+        () => {
+            let shapes = '';
+            const count = 5 + Math.floor(seed(1) * 4);
+            for (let i = 0; i < count; i++) {
+                const cx = 60 + seed(i * 3) * 360;
+                const cy = 60 + seed(i * 3 + 1) * 360;
+                const r = 15 + seed(i * 3 + 2) * 45;
+                const opacity = 0.15 + seed(i * 5) * 0.4;
+                shapes += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${i % 2 === 0 ? accent : subtle}" opacity="${opacity}"/>`;
+                // Connect some orbs with faint lines
+                if (i > 0) {
+                    const px = 60 + seed((i - 1) * 3) * 360;
+                    const py = 60 + seed((i - 1) * 3 + 1) * 360;
+                    shapes += `<line x1="${px}" y1="${py}" x2="${cx}" y2="${cy}" stroke="${accent}" stroke-width="1" opacity="0.15"/>`;
+                }
+            }
+            // Central glow
+            shapes += `<circle cx="240" cy="240" r="120" fill="${accent}" opacity="0.08" filter="url(#glow)"/>`;
+            return shapes;
+        },
+        // Style 1: Abstract geometric stack
+        () => {
+            let shapes = '';
+            const rects = 4 + Math.floor(seed(10) * 3);
+            for (let i = 0; i < rects; i++) {
+                const x = 40 + seed(i * 4) * 200;
+                const y = 40 + seed(i * 4 + 1) * 200;
+                const w = 80 + seed(i * 4 + 2) * 200;
+                const h = 60 + seed(i * 4 + 3) * 160;
+                const rx = 8 + seed(i * 7) * 24;
+                const rot = -20 + seed(i * 6) * 40;
+                const opacity = 0.1 + seed(i * 8) * 0.25;
+                shapes += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${i % 2 === 0 ? accent : subtle}" opacity="${opacity}" transform="rotate(${rot}, ${x + w / 2}, ${y + h / 2})"/>`;
+            }
+            // Diamond accent
+            shapes += `<polygon points="240,80 340,240 240,400 140,240" fill="none" stroke="${accent}" stroke-width="2" opacity="0.2"/>`;
+            return shapes;
+        },
+        // Style 2: Concentric rings
+        () => {
+            let shapes = '';
+            for (let i = 0; i < 5; i++) {
+                const r = 40 + i * 40;
+                const dashLen = 10 + seed(i * 2) * 30;
+                shapes += `<circle cx="240" cy="240" r="${r}" fill="none" stroke="${i % 2 === 0 ? accent : subtle}" stroke-width="${2 + seed(i) * 3}" stroke-dasharray="${dashLen} ${dashLen * 0.8}" opacity="${0.12 + seed(i * 3) * 0.2}" transform="rotate(${seed(i * 5) * 360}, 240, 240)"/>`;
+            }
+            // Center dot
+            shapes += `<circle cx="240" cy="240" r="12" fill="${accent}" opacity="0.6"/>`;
+            shapes += `<circle cx="240" cy="240" r="6" fill="#fff" opacity="0.8"/>`;
+            return shapes;
+        },
+        // Style 3: Mesh grid with glow nodes
+        () => {
+            let shapes = '';
+            const cols = 4, rows = 4;
+            const points = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = 60 + c * 120 + (seed(r * cols + c) - 0.5) * 40;
+                    const y = 60 + r * 120 + (seed(r * cols + c + 20) - 0.5) * 40;
+                    points.push({ x, y });
+                }
+            }
+            // Draw connections
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const dist = Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y);
+                    if (dist < 180) {
+                        shapes += `<line x1="${points[i].x}" y1="${points[i].y}" x2="${points[j].x}" y2="${points[j].y}" stroke="${accent}" stroke-width="1" opacity="${0.08 + (1 - dist / 180) * 0.12}"/>`;
+                    }
+                }
+            }
+            // Draw nodes
+            for (let i = 0; i < points.length; i++) {
+                const r = 4 + seed(i * 9) * 10;
+                shapes += `<circle cx="${points[i].x}" cy="${points[i].y}" r="${r}" fill="${i % 3 === 0 ? accent : subtle}" opacity="${0.3 + seed(i * 7) * 0.4}"/>`;
+            }
+            return shapes;
+        },
+        // Style 4: Rising bars / chart-like
+        () => {
+            let shapes = '';
+            const bars = 6 + Math.floor(seed(15) * 3);
+            const barW = 360 / bars;
+            for (let i = 0; i < bars; i++) {
+                const h = 60 + seed(i * 2) * 300;
+                const x = 60 + i * barW;
+                const y = 420 - h;
+                const rx = 8;
+                shapes += `<rect x="${x}" y="${y}" width="${barW * 0.7}" height="${h}" rx="${rx}" fill="${i % 2 === 0 ? accent : subtle}" opacity="${0.15 + seed(i * 3) * 0.25}"/>`;
+            }
+            // Trend line
+            let pathD = '';
+            for (let i = 0; i < bars; i++) {
+                const x = 60 + i * barW + barW * 0.35;
+                const h = 60 + seed(i * 2) * 300;
+                const y = 420 - h - 10;
+                pathD += `${i === 0 ? 'M' : 'L'} ${x} ${y} `;
+            }
+            shapes += `<path d="${pathD}" fill="none" stroke="${accent}" stroke-width="3" opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+            return shapes;
+        },
+    ];
+
+    const styleIdx = Math.abs(hash + slideNum) % styles.length;
+    return styles[styleIdx]();
+}
+
+/**
+ * Fetch an AI-generated illustration from Hugging Face Inference API (FLUX)
+ * Returns a Buffer of the PNG image, or null on failure
+ */
+async function fetchFluxIllustration(headline, palette, slideType) {
+    const hfToken = process.env.HF_TOKEN;
+    if (!hfToken) return null;
+
+    try {
+        // Build a focused prompt for the illustration
+        let subjectHint = headline.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 60);
+        const styleHints = [
+            'minimalist 3D illustration',
+            'clean dark background',
+            'professional modern aesthetic',
+            `${palette.mood} color scheme`,
+            'no text no typography',
+            'centered single iconic object',
+            'high quality digital art render',
+        ];
+        if (slideType === 'hook') {
+            styleHints.push('dramatic hero shot', 'eye-catching vibrant');
+        } else if (slideType === 'cta') {
+            styleHints.push('upward motion', 'growth symbol');
+        }
+
+        const prompt = `${subjectHint}, ${styleHints.join(', ')}`;
+
+        const res = await fetch('https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${hfToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ inputs: prompt }),
+        });
+
+        if (!res.ok) {
+            const errText = await res.text();
+            console.log(`      ⚠️  Hugging Face returned ${res.status}: ${errText.slice(0, 80)}`);
+            return null;
+        }
+
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        if (buffer.length < 1000) {
+            console.log('      ⚠️  Hugging Face returned invalid image data (too small)');
+            return null;
+        }
+
+        console.log(`      ✅ FLUX illustration received (${Math.round(buffer.length / 1024)}KB)`);
+        return buffer;
+    } catch (err) {
+        console.log(`      ⚠️  FLUX illustration failed: ${err.message}`);
+        return null;
+    }
+}
+
+/**
+ * Generate carousel slide images with AI illustrations (Hugging Face FLUX) + SVG fallback
  */
 async function generateSlideImages(carouselData, outputDir) {
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -26,7 +213,7 @@ async function generateSlideImages(carouselData, outputDir) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     const palette = PALETTES[Math.floor(Math.random() * PALETTES.length)];
-    console.log(`   Using premium "${palette.name}" color palette`);
+    console.log(`   Using premium "${palette.name}" color palette (${palette.mood})`);
 
     fs.mkdirSync(outputDir, { recursive: true });
     const imagePaths = [];
@@ -43,12 +230,54 @@ async function generateSlideImages(carouselData, outputDir) {
         console.warn('   ⚠️  Profile picture not found at src/assets/profile.jpg');
     }
 
+    // Pre-fetch AI illustrations from Hugging Face FLUX in batches of 3
+    const useFlux = !!process.env.HF_TOKEN;
+    const illustrationBuffers = Array.from({ length: carouselData.slides.length }, () => null);
+
+    if (useFlux) {
+        console.log('\n   📦 Generating AI illustrations with FLUX.1 Schnell...\n');
+        for (let batch = 0; batch < carouselData.slides.length; batch += 3) {
+            const batchSlides = carouselData.slides.slice(batch, batch + 3);
+            const batchPromises = batchSlides.map((slide, idx) =>
+                fetchFluxIllustration(
+                    slide.headline || slide.body || carouselData.topic,
+                    palette, slide.type
+                ).then(buf => { illustrationBuffers[batch + idx] = buf; })
+            );
+            await Promise.all(batchPromises);
+            // Small delay between batches to avoid rate limits
+            if (batch + 3 < carouselData.slides.length) {
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+    }
+
     for (const slide of carouselData.slides) {
         const slideNum = slide.slideNumber;
         console.log(`   Generating slide ${slideNum}/${carouselData.slides.length}...`);
 
         try {
-            const imagePath = await generatePremiumSlide(slide, palette, outputDir, slideNum, carouselData.slides.length, profileB64);
+            const illustrationBuf = illustrationBuffers[slideNum - 1];
+            let illustrationMarkupOrSVG;
+
+            if (illustrationBuf) {
+                // Use AI-generated FLUX illustration as base64 image
+                illustrationMarkupOrSVG = { type: 'bitmap', buffer: illustrationBuf };
+            } else {
+                // Fallback to procedural SVG
+                illustrationMarkupOrSVG = {
+                    type: 'svg',
+                    svg: generateIllustrationSVG(
+                        slide.headline || slide.body || carouselData.topic,
+                        palette, slide.type, slideNum
+                    )
+                };
+            }
+
+            const imagePath = await generatePremiumSlide(
+                slide, palette, outputDir, slideNum,
+                carouselData.slides.length, profileB64, illustrationMarkupOrSVG
+            );
             imagePaths.push(imagePath);
             console.log(`   ✅ Slide ${slideNum} rendered and saved`);
         } catch (err) {
@@ -60,100 +289,47 @@ async function generateSlideImages(carouselData, outputDir) {
     return imagePaths;
 }
 
-function getIsolated3DShape(palette, type = 0) {
-    if (type === 0) {
-        // Isometric 3D Glass Cube
-        return `
-        <g transform="translate(850, 250) scale(1.5)">
-            <defs>
-                <linearGradient id="cubeTop" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:${palette.accent};stop-opacity:0.9"/>
-                    <stop offset="100%" style="stop-color:${palette.accent};stop-opacity:0.4"/>
-                </linearGradient>
-                <linearGradient id="cubeLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:${palette.subtle};stop-opacity:0.8"/>
-                    <stop offset="100%" style="stop-color:${palette.subtle};stop-opacity:0.2"/>
-                </linearGradient>
-                <linearGradient id="cubeRight" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.15"/>
-                    <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.0"/>
-                </linearGradient>
-                <filter id="cubeDropShadow" x="-20%" y="-20%" width="150%" height="150%">
-                    <feDropShadow dx="0" dy="30" stdDeviation="20" flood-color="${palette.bg}" flood-opacity="0.8"/>
-                </filter>
-            </defs>
-            <g filter="url(#cubeDropShadow)">
-                <!-- Left Face -->
-                <path d="M 0 0 L -60 30 L -60 90 L 0 60 Z" fill="url(#cubeLeft)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-                <!-- Right Face -->
-                <path d="M 0 0 L 60 30 L 60 90 L 0 60 Z" fill="url(#cubeRight)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-                <!-- Top Face -->
-                <path d="M 0 0 L -60 30 L 0 60 L 60 30 Z" transform="translate(0, -60)" fill="url(#cubeTop)" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-            </g>
-        </g>`;
-    } else {
-        // Floating 3D Spline Sphere
-        return `
-        <g transform="translate(850, 250) scale(1.5)">
-            <defs>
-                <radialGradient id="sphereGrad" cx="30%" cy="30%" r="70%">
-                    <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9"/>
-                    <stop offset="30%" style="stop-color:${palette.accent};stop-opacity:0.8"/>
-                    <stop offset="100%" style="stop-color:${palette.bg};stop-opacity:0.1"/>
-                </radialGradient>
-                <filter id="sphereGlow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="20" dy="40" stdDeviation="25" flood-color="${palette.bg}" flood-opacity="0.9"/>
-                </filter>
-            </defs>
-            <circle cx="0" cy="0" r="70" fill="url(#sphereGrad)" filter="url(#sphereGlow)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-            <ellipse cx="-15" cy="-25" rx="20" ry="10" transform="rotate(-30 -15 -25)" fill="#ffffff" opacity="0.6"/>
-        </g>`;
-    }
-}
-
 /**
- * Generate a stunning high-quality slide using SVG
+ * Generate a stunning high-quality slide using SVG with AI or procedural illustration
  */
-async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSlides, profileB64) {
+async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSlides, profileB64, illustration) {
     const headline = escapeXml(slide.headline || '');
     const body = escapeXml(slide.body || '');
     const isHook = slide.type === 'hook';
     const isCta = slide.type === 'cta';
 
-    // Break text into lines
-    let headlineMarkup = '';
-    let bodyMarkup = '';
-
     const fontString = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-    // Select dynamic isolated Lucide icon for this slide
-    let isolatedGraphic = '';
-    const iconName = slide.icon || 'zap';
-    try {
-        const fetch = global.fetch || require('node-fetch');
-        const res = await fetch(`https://api.iconify.design/lucide/${iconName}.svg`);
-        if (res.ok) {
-            const svgText = await res.text();
-            const match = svgText.match(/<svg[^>]*>([\s\S]*?)<\/svg>/);
-            if (match && match[1]) {
-                // Lucide icons are 24x24. We scale them by 20 to 480x480.
-                // We use stroke-width 1.2 so it remains elegant at scale.
-                isolatedGraphic = `
-                <g transform="translate(680, 150) scale(20)" opacity="0.15">
-                    <g fill="none" stroke="${palette.accent}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
-                        ${match[1]}
-                    </g>
-                </g>`;
+    // Build illustration markup based on type (bitmap from FLUX or procedural SVG)
+    let illustrationMarkup = '';
+    if (illustration) {
+        if (illustration.type === 'bitmap' && illustration.buffer) {
+            // AI-generated FLUX illustration — embed as base64 image
+            const b64 = `data:image/png;base64,${illustration.buffer.toString('base64')}`;
+            if (isHook) {
+                illustrationMarkup = `
+                    <image href="${b64}" x="560" y="60" width="480" height="480"
+                           opacity="0.85" preserveAspectRatio="xMidYMid slice"
+                           clip-path="url(#illustClip)" filter="url(#illustGlow)" />`;
+            } else {
+                illustrationMarkup = `
+                    <image href="${b64}" x="620" y="100" width="400" height="400"
+                           opacity="0.6" preserveAspectRatio="xMidYMid slice"
+                           clip-path="url(#illustClip)" filter="url(#illustGlow)" />`;
+            }
+        } else if (illustration.type === 'svg' && illustration.svg) {
+            // Procedural SVG fallback
+            if (isHook) {
+                illustrationMarkup = `<g transform="translate(560, 60) scale(1.0)" opacity="0.7" filter="url(#illustGlow)">${illustration.svg}</g>`;
+            } else {
+                illustrationMarkup = `<g transform="translate(620, 100) scale(0.85)" opacity="0.5" filter="url(#illustGlow)">${illustration.svg}</g>`;
             }
         }
-    } catch (e) {
-        console.warn(`   ⚠️  Failed to fetch icon '${iconName}'. Using fallback.`);
     }
 
-    // Fallback to our custom 3D geometric shapes if the fetch fails or icon doesn't exist
-    if (!isolatedGraphic) {
-        isolatedGraphic = getIsolated3DShape(palette, slideNum % 2);
-    }
+    // Build text content
+    let headlineMarkup = '';
+    let bodyMarkup = '';
 
     if (isHook) {
         const headlineLines = wrapText(headline, 16);
@@ -167,8 +343,8 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
     } else {
         const headlineLines = wrapText(headline, 30);
         const cardY = 300;
-
         let currentY = cardY + 120;
+
         headlineMarkup = headlineLines
             .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 60}">${line}</tspan>`)
             .join('\n');
@@ -200,7 +376,7 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         ? `<rect x="100" y="300" width="880" height="700" rx="32" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>`
         : '';
 
-    const svg = `<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
+    const svg = `<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
         <defs>
             <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" style="stop-color:${palette.bg}"/>
@@ -210,6 +386,16 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="150" result="blur" />
             </filter>
+
+            <filter id="illustGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="20" result="blur"/>
+                <feFlood flood-color="${palette.accent}" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge>
+                    <feMergeNode in="glow"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
             
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                 <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="1"/>
@@ -217,6 +403,10 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
             
             <clipPath id="profileClip">
                 <circle cx="160" cy="120" r="40" />
+            </clipPath>
+
+            <clipPath id="illustClip">
+                <rect x="560" y="60" width="480" height="480" rx="40" />
             </clipPath>
         </defs>
 
@@ -226,8 +416,8 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         <circle cx="900" cy="1100" r="500" fill="${palette.subtle}" opacity="0.1" filter="url(#glow)"/>
         <rect width="1080" height="1350" fill="url(#grid)" />
         
-        <!-- Dynamic Isolated Graphic -->
-        ${isolatedGraphic}
+        <!-- AI Illustration -->
+        ${illustrationMarkup}
         
         <!-- Header -->
         ${imageTag}

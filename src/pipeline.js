@@ -62,10 +62,33 @@ async function runPipeline(options = {}) {
             // Directory might not exist yet, ignore
         }
 
-        const freshTrends = trends.filter(t => !usedTopics.has(t.title.toLowerCase().trim()));
-        const selectedTrend = freshTrends.length > 0 ? freshTrends[trendIndex] || freshTrends[0] : trends[0];
+        // Semantic dedup: also filter out trends with >60% keyword overlap with used topics
+        const freshTrends = trends.filter(t => {
+            const titleLower = t.title.toLowerCase().trim();
+            if (usedTopics.has(titleLower)) return false;
+            // Check keyword overlap with previously used topics
+            const titleWords = new Set(titleLower.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3));
+            for (const usedTitle of usedTopics) {
+                const usedWords = new Set(usedTitle.replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3));
+                if (usedWords.size === 0 || titleWords.size === 0) continue;
+                const overlap = [...titleWords].filter(w => usedWords.has(w)).length;
+                const overlapRatio = overlap / Math.min(titleWords.size, usedWords.size);
+                if (overlapRatio > 0.6) return false;
+            }
+            return true;
+        });
 
-        console.log(`   Selected fresh trend: "${selectedTrend.title}"`);
+        // Randomly pick from top 5 fresh trends for variety
+        let selectedTrend;
+        if (freshTrends.length > 0) {
+            const pool = freshTrends.slice(0, Math.min(5, freshTrends.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
+        } else {
+            // All trends used — pick random from full list
+            selectedTrend = trends[Math.floor(Math.random() * Math.min(5, trends.length))];
+        }
+
+        console.log(`   Selected fresh trend: "${selectedTrend.title}" (from ${freshTrends.length} fresh options)`);
         results.steps.selectedTrend = selectedTrend;
 
         // ── Step 2: Generate Carousel Copy ──

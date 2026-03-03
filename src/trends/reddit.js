@@ -16,7 +16,7 @@ const SUBREDDITS = [
   'graphic_design',
 ];
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const USER_AGENT = 'CarouselBot/1.0';
 
 async function fetchSubreddit(subreddit, sort = 'hot', limit = 10) {
   const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=day`;
