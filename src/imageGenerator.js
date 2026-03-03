@@ -209,6 +209,10 @@ async function generateFallbackSlide(slide, palette, outputDir, slideNum) {
     <text x="540" y="120" font-family="Arial" font-size="18" fill="${palette.subtle}" text-anchor="middle" opacity="0.5">
       ${String(slideNum).padStart(2, '0')}
     </text>
+    <!-- Watermark -->
+    <text x="540" y="1315" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="bold" fill="${palette.subtle}" text-anchor="middle" opacity="0.6">
+      @aryanrajput
+    </text>
     <!-- Content -->
     ${headlineMarkup}
     ${bodyMarkup}
