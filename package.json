@@ -1,0 +1,24 @@
+{
+  "name": "carousel-automation",
+  "version": "1.0.0",
+  "description": "Daily LinkedIn carousel automation — trend discovery, AI copywriting, image generation, and auto-posting",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "generate": "node src/cli.js generate",
+    "dry-run": "node src/cli.js dry-run"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "pdf-lib": "^1.17.1",
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.33.5"
+  }
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carousel Autopilot — LinkedIn Content Automation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- ── Ambient Background ── -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ── Main App ── -->
+  <div class="app">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <rect x="2" y="2" width="8" height="8" rx="1.5"/>
+              <rect x="14" y="2" width="8" height="8" rx="1.5"/>
+              <rect x="2" y="14" width="8" height="8" rx="1.5"/>
+              <rect x="14" y="14" width="8" height="8" rx="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Carousel Autopilot</h1>
+            <p class="subtitle">LinkedIn Content Automation</p>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="status-badge" class="badge badge-idle">
+          <span class="badge-dot"></span>
+          <span id="status-text">Idle</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Actions Bar ── -->
+    <section class="actions-bar">
+      <button id="btn-generate" class="btn btn-primary" onclick="triggerGenerate()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Generate Carousel
+      </button>
+      <button id="btn-publish" class="btn btn-accent" onclick="triggerPublish()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Generate & Post to LinkedIn
+      </button>
+      <button id="btn-trends" class="btn btn-ghost" onclick="previewTrends()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Preview Trends
+      </button>
+    </section>
+
+    <!-- ── Stats Row ── -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon" style="--accent: #6C63FF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value" id="stat-total">0</span>
+          <span class="stat-label">Total Runs</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="--accent: #7EE787">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value" id="stat-success">0</span>
+          <span class="stat-label">Successful</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="--accent: #64FFDA">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value" id="stat-slides">0</span>
+          <span class="stat-label">Slides Created</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="--accent: #FF6B6B">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value" id="stat-last">Never</span>
+          <span class="stat-label">Last Run</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Content Area ── -->
+    <div class="content-grid">
+
+      <!-- Left: Pipeline Log / Trends Preview -->
+      <div class="panel panel-main">
+        <div class="panel-header">
+          <h2 id="panel-title">Pipeline Activity</h2>
+          <div class="panel-tabs">
+            <button class="tab active" data-tab="log" onclick="switchTab(this, 'log')">Log</button>
+            <button class="tab" data-tab="trends" onclick="switchTab(this, 'trends')">Trends</button>
+          </div>
+        </div>
+        <div id="tab-log" class="panel-body tab-content active">
+          <div id="pipeline-log" class="log-area">
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <p>Click <strong>"Generate Carousel"</strong> to start</p>
+              <p class="dim">The pipeline will discover trends, write copy, generate images, and assemble a carousel PDF</p>
+            </div>
+          </div>
+        </div>
+        <div id="tab-trends" class="panel-body tab-content" style="display:none">
+          <div id="trends-list" class="trends-list">
+            <div class="empty-state">
+              <p>Click <strong>"Preview Trends"</strong> to scan Reddit & Medium</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Output Gallery -->
+      <div class="panel panel-gallery">
+        <div class="panel-header">
+          <h2>Generated Carousels</h2>
+          <button class="btn btn-sm btn-ghost" onclick="loadOutputs()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+        </div>
+        <div id="gallery" class="gallery-grid">
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>No carousels yet</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── History Table ── -->
+    <section class="panel panel-history">
+      <div class="panel-header">
+        <h2>Run History</h2>
+      </div>
+      <div class="panel-body">
+        <table id="history-table" class="history-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Topic</th>
+              <th>Hook</th>
+              <th>Slides</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="6" class="dim" style="text-align:center;padding:2rem">No runs yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
