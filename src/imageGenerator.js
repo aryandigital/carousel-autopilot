@@ -9,14 +9,7 @@ const sharp = require('sharp');
 
 // Premium color palettes — each with a unique mood
 const PALETTES = [
-    { name: 'midnight', bg: '#0F0F1A', accent: '#6C63FF', text: '#FFFFFF', subtle: '#8B85FF', mood: 'deep purple cosmic' },
-    { name: 'ocean', bg: '#0A192F', accent: '#64FFDA', text: '#CCD6F6', subtle: '#45E0C0', mood: 'ocean teal dark' },
-    { name: 'sunset', bg: '#1A0A2E', accent: '#FF6B6B', text: '#F0E6FF', subtle: '#FF8E53', mood: 'warm sunset gradient' },
-    { name: 'forest', bg: '#0D1117', accent: '#7EE787', text: '#E6EDF3', subtle: '#56D364', mood: 'dark green nature' },
-    { name: 'royal', bg: '#13111C', accent: '#E040FB', text: '#F3E5F5', subtle: '#CE93D8', mood: 'royal magenta neon' },
-    { name: 'ember', bg: '#1C1410', accent: '#FF9800', text: '#FFF3E0', subtle: '#FFB74D', mood: 'amber fire warm' },
-    { name: 'arctic', bg: '#0B1628', accent: '#00B4D8', text: '#E0F7FA', subtle: '#48CAE4', mood: 'icy blue cold' },
-    { name: 'crimson', bg: '#1A0000', accent: '#FF1744', text: '#FFE0E0', subtle: '#FF5252', mood: 'deep red dramatic' },
+    { name: 'apple-premium', bg: '#FFFFFF', bg2: '#F8F9FA', accent: '#3945D3', text: '#111827', subtle: '#8A94D4', mood: 'clean premium bright', dark: false },
 ];
 
 /**
@@ -33,8 +26,6 @@ function generateIllustrationSVG(headline, palette, slideType, slideNum) {
 
     const accent = palette.accent;
     const subtle = palette.subtle;
-
-    // Pick an illustration style based on seed
     const styles = [
         // Style 0: Floating orbs constellation
         () => {
@@ -298,7 +289,8 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
     const isHook = slide.type === 'hook';
     const isCta = slide.type === 'cta';
 
-    const fontString = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    const fontString = "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif";
+    const baseTextColor = palette.dark ? 'rgba(255,255,255,0.88)' : 'rgba(17,24,39,0.88)';
 
     // Build illustration markup based on type (bitmap from FLUX or procedural SVG)
     let illustrationMarkup = '';
@@ -334,18 +326,13 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
     // Helper to render lines with dynamic highlight (*word*)
     const renderLineWithHighlights = (line, baseColor, isHeadline) => {
         const parts = line.split(/(\*[^*]+\*)/g);
-        let currentX = isHook ? 120 : 160;
-        // For estimating width to position spans. Not perfect, but works for rough SVG text layout without a real DOM
-        // Real absolute positioning is handled by dy, but horizontal flow requires dx or distinct x
-
-        // Simpler approach: let SVG handle the flow by using simple <tspan> with no x/dx except the first one
         let output = '';
-        parts.forEach((part, index) => {
+        parts.forEach((part) => {
             if (!part) return;
             if (part.startsWith('*') && part.endsWith('*')) {
                 const text = part.slice(1, -1);
-                const highlightColor = isHeadline && !isHook ? palette.text : palette.accent;
-                output += `<tspan fill="${highlightColor}" font-style="italic">${text}</tspan>`;
+                const highlightColor = isHeadline ? palette.accent : (palette.dark ? '#ffffff' : '#0b1220');
+                output += `<tspan fill="${highlightColor}" font-weight="800">${text}</tspan>`;
             } else {
                 output += `<tspan fill="${baseColor}">${part}</tspan>`;
             }
@@ -353,16 +340,16 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         return output;
     };
     if (isHook) {
-        const headlineLines = wrapText(headline, 16);
+        const headlineLines = wrapText(headline, 14);
         headlineMarkup = headlineLines
             .map((line, i) => {
-                const inner = renderLineWithHighlights(line, '#ffffff', true);
-                return `<tspan x="120" dy="${i === 0 ? 0 : 90}">${inner}</tspan>`;
+                const inner = renderLineWithHighlights(line, palette.text, true);
+                return `<tspan x="120" dy="${i === 0 ? 0 : 96}">${inner}</tspan>`;
             }).join('\n');
 
-        headlineMarkup = `<text x="120" y="450" font-family="${fontString}" font-size="82" font-weight="900" letter-spacing="-2">${headlineMarkup}</text>`;
+        headlineMarkup = `<text xml:space="preserve" x="120" y="430" font-family="${fontString}" font-size="92" font-weight="900" letter-spacing="-1.5">${headlineMarkup}</text>`;
     } else {
-        const headlineLines = wrapText(headline, 28);
+        const headlineLines = wrapText(headline, 26);
         const cardY = 300;
         let currentY = cardY + 120;
 
@@ -370,39 +357,39 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
             .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 65}">${renderLineWithHighlights(line, palette.accent, true)}</tspan>`)
             .join('\n');
 
-        headlineMarkup = `<text x="160" y="${currentY}" font-family="${fontString}" font-size="48" font-weight="900" letter-spacing="-1">${headlineMarkup}</text>`;
+        headlineMarkup = `<text xml:space="preserve" x="160" y="${currentY}" font-family="${fontString}" font-size="48" font-weight="900" letter-spacing="-0.5">${headlineMarkup}</text>`;
 
         currentY += (headlineLines.length * 65) + 50;
 
         if (body) {
             const bodyLines = wrapText(body, 38);
             bodyMarkup = bodyLines
-                .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 55}">${renderLineWithHighlights(line, 'rgba(255,255,255,0.85)', false)}</tspan>`)
+                .map((line, i) => `<tspan x="160" dy="${i === 0 ? 0 : 52}">${renderLineWithHighlights(line, baseTextColor, false)}</tspan>`)
                 .join('\n');
-            bodyMarkup = `<text x="160" y="${currentY}" font-family="${fontString}" font-size="36" font-weight="400" line-height="1.5">${bodyMarkup}</text>`;
+            bodyMarkup = `<text xml:space="preserve" x="160" y="${currentY}" font-family="${fontString}" font-size="34" font-weight="500" line-height="1.5">${bodyMarkup}</text>`;
         }
     }
 
     const swipeText = slideNum < totalSlides
-        ? `<rect x="800" y="1270" width="160" height="40" rx="20" fill="${palette.accent}" opacity="0.1"/>
-           <text x="880" y="1296" font-family="${fontString}" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle">SWIPE →</text>`
-        : `<rect x="800" y="1270" width="160" height="40" rx="20" fill="${palette.accent}" opacity="0.1"/>
-           <text x="880" y="1296" font-family="${fontString}" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle">FOLLOW +</text>`;
+        ? `<rect x="780" y="1260" width="180" height="48" rx="24" fill="${palette.accent}" opacity="0.14"/>
+           <text xml:space="preserve" x="870" y="1291" font-family="${fontString}" font-size="20" font-weight="700" fill="${palette.accent}" text-anchor="middle">SWIPE -></text>`
+        : `<rect x="760" y="1256" width="210" height="56" rx="28" fill="${palette.accent}" opacity="0.18" stroke="${palette.accent}" stroke-opacity="0.35"/>
+           <text xml:space="preserve" x="865" y="1291" font-family="${fontString}" font-size="22" font-weight="800" fill="${palette.accent}" text-anchor="middle">FOLLOW FOR MORE</text>`;
 
     const imageTag = profileB64
         ? `<image href="${profileB64}" x="120" y="80" height="80" width="80" clip-path="url(#profileClip)" preserveAspectRatio="xMidYMid slice" />`
-        : `<circle cx="160" cy="120" r="40" fill="rgba(255,255,255,0.1)" />`;
+        : `<circle cx="160" cy="120" r="40" fill="${palette.dark ? 'rgba(255,255,255,0.1)' : 'rgba(17,24,39,0.08)'}" />`;
 
     const cardHtml = (!isHook)
-        ? `<rect x="80" y="280" width="920" height="740" rx="40" fill="rgba(0,0,0,0.2)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-           <rect x="100" y="300" width="880" height="700" rx="32" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" filter="drop-shadow(0px 20px 40px rgba(0,0,0,0.5))"/>`
+        ? `<rect x="80" y="280" width="920" height="740" rx="40" fill="${palette.dark ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.58)'}" stroke="${palette.dark ? 'rgba(255,255,255,0.06)' : 'rgba(17,24,39,0.08)'}" stroke-width="1"/>
+           <rect x="100" y="300" width="880" height="700" rx="32" fill="${palette.dark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.84)'}" stroke="${palette.dark ? 'rgba(255,255,255,0.1)' : 'rgba(17,24,39,0.12)'}" stroke-width="1.5" filter="drop-shadow(0px 20px 40px rgba(0,0,0,0.25))"/>`
         : '';
 
     const svg = `<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
         <defs>
             <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" style="stop-color:${palette.bg}"/>
-                <stop offset="100%" style="stop-color:#05050A"/>
+                <stop offset="100%" style="stop-color:${palette.bg2 || '#05050A'}"/>
             </linearGradient>
             
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -419,7 +406,7 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
             </filter>
             
             <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="${palette.dark ? 'rgba(255,255,255,0.03)' : 'rgba(17,24,39,0.05)'}" stroke-width="1"/>
             </pattern>
             
             <clipPath id="profileClip">
@@ -433,8 +420,8 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
 
         <!-- Background -->
         <rect width="1080" height="1350" fill="url(#bgGrad)"/>
-        <circle cx="100" cy="200" r="500" fill="${palette.accent}" opacity="0.15" filter="url(#glow)"/>
-        <circle cx="900" cy="1100" r="600" fill="${palette.subtle}" opacity="0.12" filter="url(#glow)"/>
+        <circle cx="100" cy="200" r="500" fill="${palette.accent}" opacity="${palette.dark ? '0.16' : '0.20'}" filter="url(#glow)"/>
+        <circle cx="900" cy="1100" r="600" fill="${palette.subtle}" opacity="${palette.dark ? '0.12' : '0.16'}" filter="url(#glow)"/>
         <rect width="1080" height="1350" fill="url(#grid)" />
         <rect width="1080" height="1350" filter="url(#noiseFilter)" style="pointer-events:none;" />
         
@@ -443,11 +430,11 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         
         <!-- Header -->
         ${imageTag}
-        <text x="220" y="115" font-family="${fontString}" font-size="28" font-weight="900" fill="#ffffff">Aryan Rajput</text>
-        <text x="220" y="145" font-family="${fontString}" font-size="20" fill="rgba(255,255,255,0.5)">@aryanrajput</text>
+        <text xml:space="preserve" x="220" y="115" font-family="${fontString}" font-size="28" font-weight="900" fill="${palette.text}">Aryan Rajput</text>
+        <text xml:space="preserve" x="220" y="145" font-family="${fontString}" font-size="20" fill="${palette.dark ? 'rgba(255,255,255,0.55)' : 'rgba(17,24,39,0.55)'}">@aryanrajput</text>
         
         <rect x="830" y="95" width="130" height="50" rx="25" fill="${palette.accent}" fill-opacity="0.1" stroke="${palette.accent}" stroke-opacity="0.3" stroke-width="1"/>
-        <text x="895" y="128" font-family="monospace" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle" letter-spacing="2">${String(slideNum).padStart(2, '0')}/${String(totalSlides).padStart(2, '0')}</text>
+        <text xml:space="preserve" x="895" y="128" font-family="monospace" font-size="20" font-weight="bold" fill="${palette.accent}" text-anchor="middle" letter-spacing="2">${String(slideNum).padStart(2, '0')}/${String(totalSlides).padStart(2, '0')}</text>
 
         <!-- Main Content Area -->
         ${cardHtml}
@@ -455,8 +442,8 @@ async function generatePremiumSlide(slide, palette, outputDir, slideNum, totalSl
         ${bodyMarkup}
 
         <!-- Footer -->
-        <line x1="120" y1="1250" x2="960" y2="1250" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
-        <text x="120" y="1300" font-family="${fontString}" font-size="20" font-weight="600" fill="rgba(255,255,255,0.4)" letter-spacing="2" text-transform="uppercase">Daily Insights</text>
+        <line x1="120" y1="1250" x2="960" y2="1250" stroke="${palette.dark ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.16)'}" stroke-width="2" />
+        <text xml:space="preserve" x="120" y="1300" font-family="${fontString}" font-size="20" font-weight="700" fill="${palette.dark ? 'rgba(255,255,255,0.45)' : 'rgba(17,24,39,0.45)'}" letter-spacing="2" text-transform="uppercase">Daily Insights</text>
         ${swipeText}
     </svg>`;
 

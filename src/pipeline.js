@@ -78,27 +78,98 @@ async function runPipeline(options = {}) {
             return true;
         });
 
-        // Randomly pick from top 5 fresh trends for variety
+        // Rank trends for professional LinkedIn traction quality
+        const isLowSignalForCreatorCarousel = (trend) => {
+            const text = `${trend.title} ${trend.context || ''}`.toLowerCase();
+            const blocked = [
+                'president', 'election', 'democrat', 'republican', 'radio',
+                'iran', 'military', 'drone', 'air defenses', 'war', 'conflict',
+                'baby born', 'netflix debt', 'paramount', 'celebrity', 'meme'
+            ];
+            return blocked.some((k) => text.includes(k));
+        };
+
+        const isHighIntentForCreatorCarousel = (trend) => {
+            const text = `${trend.title} ${trend.context || ''}`.toLowerCase();
+            const positive = [
+                'ai', 'openai', 'anthropic', 'nvidia', 'automation', 'startup',
+                'saas', 'product', 'marketing', 'sales', 'creator', 'linkedin',
+                'growth', 'business', 'founder', 'strategy', 'productivity',
+                'workflow', 'electric', 'technology', 'tech'
+            ];
+            const hasKeyword = positive.some((k) => text.includes(k));
+            const titleWords = trend.title.replace(/[^a-z0-9\s]/gi, ' ').split(/\s+/).filter(Boolean);
+            const hasSufficientContext = titleWords.length >= 6;
+            return hasKeyword && hasSufficientContext;
+        };
+
+        const rankTrendQuality = (trend) => {
+            const text = `${trend.title} ${trend.context || ''}`.toLowerCase();
+            let score = trend.engagement || 0;
+
+            const highIntent = [
+                'ai', 'automation', 'startup', 'saas', 'product', 'marketing',
+                'sales', 'creator', 'linkedin', 'growth', 'business', 'founder',
+                'productivity', 'workflow', 'strategy', 'career'
+            ];
+            const lowIntent = [
+                'president', 'election', 'democrat', 'republican', 'radio',
+                'war', 'military', 'drone', 'netflix debt', 'paramount',
+                'celebrity', 'meme'
+            ];
+
+            for (const k of highIntent) {
+                if (text.includes(k)) score += 35;
+            }
+            for (const k of lowIntent) {
+                if (text.includes(k)) score -= 45;
+            }
+
+            if (trend.source === 'medium') score += 120;
+            return score;
+        };
+
+        const rankedFresh = [...freshTrends].sort((a, b) => rankTrendQuality(b) - rankTrendQuality(a));
+        const rankedAll = [...trends].sort((a, b) => rankTrendQuality(b) - rankTrendQuality(a));
+        const preferredFresh = rankedFresh.filter((t) => !isLowSignalForCreatorCarousel(t));
+        const preferredAll = rankedAll.filter((t) => !isLowSignalForCreatorCarousel(t));
+        const highIntentFresh = preferredFresh.filter(isHighIntentForCreatorCarousel);
+        const highIntentAll = preferredAll.filter(isHighIntentForCreatorCarousel);
+
+        // Pick from top ranked pool for variety + relevance
         let selectedTrend;
-        if (freshTrends.length > 0) {
-            const pool = freshTrends.slice(0, Math.min(5, freshTrends.length));
+        if (highIntentFresh.length > 0) {
+            const pool = highIntentFresh.slice(0, Math.min(4, highIntentFresh.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
+        } else if (preferredFresh.length > 0) {
+            const pool = preferredFresh.slice(0, Math.min(4, preferredFresh.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
+        } else if (rankedFresh.length > 0) {
+            const pool = rankedFresh.slice(0, Math.min(4, rankedFresh.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
+        } else if (highIntentAll.length > 0) {
+            const pool = highIntentAll.slice(0, Math.min(4, highIntentAll.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
+        } else if (preferredAll.length > 0) {
+            const pool = preferredAll.slice(0, Math.min(4, preferredAll.length));
             selectedTrend = pool[Math.floor(Math.random() * pool.length)];
         } else {
-            // All trends used — pick random from full list
-            selectedTrend = trends[Math.floor(Math.random() * Math.min(5, trends.length))];
+            // All trends used - pick random from top ranked list
+            const pool = rankedAll.slice(0, Math.min(4, rankedAll.length));
+            selectedTrend = pool[Math.floor(Math.random() * pool.length)];
         }
 
         console.log(`   Selected fresh trend: "${selectedTrend.title}" (from ${freshTrends.length} fresh options)`);
-        results.steps.selectedTrend = selectedTrend;
-
+        
         // ── Step 2: Generate Carousel Copy ──
         const carouselCopy = await generateCarouselCopy(selectedTrend);
+
         results.steps.copy = {
             topic: carouselCopy.topic,
             slideCount: carouselCopy.slides?.length || 0,
             hook: carouselCopy.hook || carouselCopy.slides?.[0]?.headline,
         };
-
+        
         // Save copy as JSON
         fs.mkdirSync(outputDir, { recursive: true });
         fs.writeFileSync(
