@@ -10,6 +10,7 @@ const { generateCarouselCopy } = require('./copywriter');
 const { generateSlideImages } = require('./imageGenerator');
 const { assemblePDF } = require('./pdfAssembler');
 const { postToLinkedIn } = require('./linkedin');
+const { sendDMs } = require('./dmAutomator');
 
 /**
  * Run the full carousel generation pipeline
@@ -92,10 +93,9 @@ async function runPipeline(options = {}) {
         const isHighIntentForCreatorCarousel = (trend) => {
             const text = `${trend.title} ${trend.context || ''}`.toLowerCase();
             const positive = [
-                'ai', 'openai', 'anthropic', 'nvidia', 'automation', 'startup',
-                'saas', 'product', 'marketing', 'sales', 'creator', 'linkedin',
-                'growth', 'business', 'founder', 'strategy', 'productivity',
-                'workflow', 'electric', 'technology', 'tech'
+                'website', 'frontend', 'react', 'conversion', 'ui/ux', 'web design',
+                'css', 'html', 'javascript', 'developer', 'freelance', 'portfolio',
+                'psychology', 'behavior', 'persuasion', 'sales psychology'
             ];
             const hasKeyword = positive.some((k) => text.includes(k));
             const titleWords = trend.title.replace(/[^a-z0-9\s]/gi, ' ').split(/\s+/).filter(Boolean);
@@ -108,9 +108,10 @@ async function runPipeline(options = {}) {
             let score = trend.engagement || 0;
 
             const highIntent = [
-                'ai', 'automation', 'startup', 'saas', 'product', 'marketing',
-                'sales', 'creator', 'linkedin', 'growth', 'business', 'founder',
-                'productivity', 'workflow', 'strategy', 'career'
+                'website', 'frontend', 'react', 'conversion', 'ui/ux', 'web design',
+                'css', 'html', 'javascript', 'developer', 'freelance', 'portfolio',
+                'optimization', 'seo', 'accessibility', 'psychology',
+                'behavior', 'persuasion', 'sales psychology'
             ];
             const lowIntent = [
                 'president', 'election', 'democrat', 'republican', 'radio',
@@ -197,7 +198,7 @@ async function runPipeline(options = {}) {
             results.steps.publish = publishResult;
         } else {
             console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━');
-            console.log('⏭️  SKIPPING PUBLISH (dry run)');
+            console.log('⏭️  SKIPPING PUBLISH & DMS (dry run)');
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
             results.steps.publish = { skipped: true, reason: 'dry run' };
         }

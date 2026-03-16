@@ -1,6 +1,16 @@
 node_modules/
 .env
 output/
+test_output/
 *.log
 .DS_Store
-Thumbs.db
+update_env.js
+patch_*.js
+temp_src.js
+test_*.js
+dm_history.json
+dm_targets.json
+diff.txt
+old_image.js
+patch2.js
+patch_image.py

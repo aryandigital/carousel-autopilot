@@ -12,15 +12,15 @@ const { runPipeline } = require('./src/pipeline');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Middleware ──
+// â”€â”€ Middleware â”€â”€
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/output', express.static(path.join(__dirname, 'output')));
 
-// ── State ──
+// â”€â”€ State â”€â”€
 let pipelineStatus = { running: false, lastRun: null, lastResult: null, history: [] };
 
-// ── API Routes ──
+// â”€â”€ API Routes â”€â”€
 
 // Get pipeline status + history 
 app.get('/api/status', (req, res) => {
@@ -64,7 +64,7 @@ app.post('/api/publish', async (req, res) => {
     }
 
     pipelineStatus.running = true;
-    res.json({ message: 'Pipeline started (LIVE — will post to LinkedIn)', status: 'running' });
+    res.json({ message: 'Pipeline started (LIVE â€” will post to LinkedIn)', status: 'running' });
 
     try {
         const result = await runPipeline({ dryRun: false });
@@ -152,10 +152,10 @@ app.get('/api/cron', (req, res) => {
     }
 
     pipelineStatus.running = true;
-    // Send a tiny response immediately — cron-job.org reads this and nothing else
+    // Send a tiny response immediately â€” cron-job.org reads this and nothing else
     res.status(202).json({ ok: true });
 
-    // ── Fully suppress ALL stdout/stderr during pipeline run ──
+    // â”€â”€ Fully suppress ALL stdout/stderr during pipeline run â”€â”€
     // This prevents Render from buffering massive output that triggers "output too large"
     const origStdoutWrite = process.stdout.write.bind(process.stdout);
     const origStderrWrite = process.stderr.write.bind(process.stderr);
@@ -204,34 +204,41 @@ app.get('/api/cron', (req, res) => {
     });
 });
 
-// ── Local Cron (optional — for when running locally) ──
-const cronHour = process.env.CRON_HOUR || 9;
+// Local Cron (optional - for when running locally)
 const cronMinute = process.env.CRON_MINUTE || 0;
-const cronExpression = `${cronMinute} ${cronHour} * * *`;
+const cronHoursRaw = process.env.CRON_HOURS || process.env.CRON_HOUR || '9,13,18';
+const cronHours = String(cronHoursRaw)
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean);
 
-cron.schedule(cronExpression, async () => {
-    console.log(`\n⏰ Scheduled run triggered at ${new Date().toLocaleString()}\n`);
-    if (!pipelineStatus.running) {
-        pipelineStatus.running = true;
-        try {
-            const result = await runPipeline({ dryRun: false });
-            pipelineStatus.lastRun = new Date().toISOString();
-            pipelineStatus.lastResult = result;
-        } catch (err) {
-            console.error('Scheduled run failed:', err);
-        } finally {
-            pipelineStatus.running = false;
+for (const hour of cronHours) {
+    const cronExpression = `${cronMinute} ${hour} * * *`;
+    cron.schedule(cronExpression, async () => {
+        console.log(`\nScheduled run triggered at ${new Date().toLocaleString()} (hour ${hour})\n`);
+        if (!pipelineStatus.running) {
+            pipelineStatus.running = true;
+            try {
+                const result = await runPipeline({ dryRun: false });
+                pipelineStatus.lastRun = new Date().toISOString();
+                pipelineStatus.lastResult = result;
+            } catch (err) {
+                console.error('Scheduled run failed:', err);
+            } finally {
+                pipelineStatus.running = false;
+            }
         }
-    }
-}, { timezone: 'Asia/Kolkata' });
+    }, { timezone: 'Asia/Kolkata' });
+}
 
-// ── SPA Fallback ──
+// â”€â”€ SPA Fallback â”€â”€
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ── Start ──
+// â”€â”€ Start â”€â”€
 app.listen(PORT, () => {
-    console.log(`\n🌐 Dashboard running at http://localhost:${PORT}`);
-    console.log(`⏰ Daily schedule: ${cronHour}:${String(cronMinute).padStart(2, '0')} IST\n`);
+    console.log(`\nðŸŒ Dashboard running at http://localhost:${PORT}`);
+    console.log(`Daily schedules: ${cronHours.join(',')}:${String(cronMinute).padStart(2, '0')} IST\n`);
 });
+

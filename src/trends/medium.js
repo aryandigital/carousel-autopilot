@@ -5,16 +5,17 @@ const RssParser = require('rss-parser');
 const parser = new RssParser();
 
 const TOPICS = [
-    'artificial-intelligence',
-    'marketing',
-    'design',
-    'technology',
-    'content-strategy',
-    'psychology',
-    'future',
-    'productivity',
-    'ux-design',
-    'startup',
+    'web-development',
+    'frontend',
+    'reactjs',
+    'ui-ux',
+    'javascript',
+    'web-design',
+    'css',
+    'marketing-psychology',
+    'consumer-behavior',
+    'conversion-optimization',
+    'cro'
 ];
 
 async function fetchMediumTopic(topic) {

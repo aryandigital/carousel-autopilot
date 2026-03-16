@@ -4,16 +4,18 @@
 // Uses Reddit's public .json endpoints — no API key needed
 
 const SUBREDDITS = [
-  'artificial',
-  'marketing',
-  'design',
-  'technology',
-  'Futurology',
-  'content_marketing',
-  'psychology',
-  'ChatGPT',
-  'StableDiffusion',
-  'graphic_design',
+  'webdev',
+  'Frontend',
+  'reactjs',
+  'web_design',
+  'css',
+  'javascript',
+  'html5',
+  'behavioraleconomics',
+  'marketingpsychology',
+  'persuasion',
+  'growthhacking',
+  'cro',
 ];
 
 const USER_AGENT = 'CarouselBot/1.0';

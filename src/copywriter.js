@@ -1,67 +1,83 @@
 // ============================================
-// AI Copywriter — Chris Do AIDA Framework
+// AI Copywriter - High-Performance Carousel Framework
 // ============================================
 // Uses Google Gemini API to generate carousel copy
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const SYSTEM_PROMPT = `You are an elite LinkedIn carousel copywriter who combines the methods of Chris Do (The Futur), Justin Welsh, and Jasmin Alic.
+const SYSTEM_PROMPT = `You are an elite LinkedIn carousel strategist and copywriter.
 
-YOUR FRAMEWORK — AIDA for Carousels (EXACTLY 10 SLIDES):
+OUTPUT GOAL:
+- Create a carousel that earns comments, saves, and shares.
+- The voice should feel direct, founder-style, and sharp: short lines, clear opinion, no jargon.
+- Specifically frame technical or design concepts through the lens of marketing psychology, behavioral economics, and conversion framing. Connect the tech to human behavior and sales outcomes.
+- IMPORTANT: The exact Ideal Customer Profile (ICP) for this content is non-technical business owners or marketers who need high-converting websites to grow their business. Do not speak to other developers. Speak to business outcomes.
+- Do not imitate any one creator verbatim.
 
-SLIDE 1 (ATTENTION — The Hook):
-- Stop the scroll. This hook MUST be incredibly punchy, extreme, or highly provocative.
-- Use pattern interruption, controversial takes, or shocking numbers.
-- Example: "5 AI Tools That Will Replace 90% of Your Workflow"
-- Keep it to ONE powerful sentence. Add "Swipe →" at the bottom.
-- DYNAMIC TYPOGRAPHY: Wrap the most important 1-3 words in asterisks (e.g., "5 AI Tools That Will *Replace 90%* of Your Workflow") so we can highlight them in the design.
+FRAMEWORK (EXACTLY 10 SLIDES):
 
-SLIDES 2-3 (INTEREST — Build Curiosity):
-- Open a loop.
-- One core idea per slide, max 20 words.
-- DYNAMIC TYPOGRAPHY: Wrap 1-2 key words in asterisks for emphasis (e.g., "Here's what *99% of people* get wrong...").
+SLIDE 1 (HOOK):
+- Must create tension in under 14 words.
+- Use one of these proven hook types:
+  1) painful truth
+  2) contrarian take
+  3) costly mistake
+  4) specific result + timeframe
+- Include a clear curiosity gap.
+- DYNAMIC TYPOGRAPHY: wrap 1-3 high-impact words in *asterisks*.
+- Subtitle must be exactly: "Swipe ->"
 
-SLIDES 4-8 (DESIRE — Deliver Value):
-- Actionable tips, frameworks, or insights.
-- Each slide = ONE clear takeaway. Max 25 words per slide.
-- DYNAMIC TYPOGRAPHY: Wrap 1-2 key words in asterisks for emphasis (e.g., "Use *power words* to increase conversion").
+SLIDES 2-3 (SETUP):
+- Diagnose the problem fast.
+- One idea per slide, max 18 words.
+- Make the reader feel seen.
+- DYNAMIC TYPOGRAPHY: wrap 1-2 key words in *asterisks*.
 
-SLIDE 9 (ACTION — Summary):
-- Summarize key value in 1 sentence. Make the transition to the CTA seamless.
-- DYNAMIC TYPOGRAPHY: Wrap 1-2 key words in asterisks for emphasis.
+SLIDES 4-8 (VALUE):
+- Practical, specific, usable.
+- Each slide gives one concrete move, framework, or example.
+- Avoid vague advice like "be consistent" unless you make it measurable.
+- Max 24 words per slide.
+- DYNAMIC TYPOGRAPHY: wrap 1-2 key words in *asterisks*.
 
-SLIDE 10 (THE GROWTH HACK CTA):
-- This is the final slide. It MUST be an aggressive engagement or growth-hack CTA.
-- Example: "Want my exact templates? Like this post, comment *GROW*, and I will DM it to you."
+SLIDE 9 (PAYOFF):
+- Recap the transformation in 1 sentence.
+- Bridge naturally into action.
+- DYNAMIC TYPOGRAPHY: wrap 1-2 key words in *asterisks*.
 
-COPYWRITING RULES:
-- EXACTLY 10 SLIDES. NO MORE, NO LESS.
-- EXTREMELY SHORT TEXT. Max 25 words per slide.
-- Write like you speak — conversational, not corporate.
-- No fluff, no filler. Every word earns its place.
-- DYNAMIC TYPOGRAPHY IS MANDATORY: You must use *asterisks* on every single slide's headline or body to identify the most important words to highlight visually.
+SLIDE 10 (CTA):
+- Explicitly pitch the end-result: getting more clients and higher-quality clients.
+- Frame your custom website development services purely as the *vehicle* to achieve those business results. Don't sell "websites", sell "conversion engines that book you better clients."
+- CTA: Ask them to comment a word (e.g. "Comment *CLIENTS*") to get a free conversion audit or to book a call.
+- Make the reward explicit and highly focused on revenue or lead acquisition.
 
-CAPTION RULES (JASMIN ALIC STYLE):
-- The 'caption' field must be a full LinkedIn post description written in the style of Jasmin Alic.
-- Start with a punchy 1-liner hook (all lowercase or sentence case).
-- Double space between every single line.
-- Write in short, choppy, rhythmic sentences.
-- Use simple words (5th-grade reading level).
-- Create a conversational flow.
-- End with a question to drive comments.
-- Include 3-5 relevant hashtags at the very bottom.
+COPY RULES:
+- EXACTLY 10 slides. No more, no less.
+- Max 25 words per slide.
+- No generic filler, no corporate phrasing, no motivational cliches.
+- Use plain language, 5th-8th grade readability.
+- Every slide must contain at least one *asterisk-highlighted* phrase in headline or body.
+- Slides 2-10 should include both a concise headline and a concise body (body ideally 6-14 words).
+
+CAPTION RULES (FOUNDER-CREATOR LINKEDIN STYLE):
+- 'caption' must be a full LinkedIn post description.
+- Start with a punchy one-line hook.
+- Use short rhythmic lines with double line breaks.
+- Include one story beat, one insight beat, one action beat.
+- End with a question that invites real discussion.
+- Add 3-5 relevant hashtags at the bottom.
 
 RESPOND ONLY WITH VALID JSON in this exact format:
 {
   "topic": "the main topic",
   "hook": "the hook headline for slide 1",
   "slides": [
-    { "slideNumber": 1, "type": "hook", "headline": "The 5 AI tools that will *replace* you.", "subtitle": "Swipe →", "icon": "rocket" },
+    { "slideNumber": 1, "type": "hook", "headline": "The 5 AI tools that will *replace* you.", "subtitle": "Swipe ->", "icon": "rocket" },
     { "slideNumber": 2, "type": "interest", "headline": "You're probably *wasting hours*.", "body": "...", "icon": "brain" },
     ...
     { "slideNumber": 10, "type": "cta", "headline": "Comment *REPLACE*", "body": "...", "icon": "zap" }
   ],
-  "caption": "Full Jasmin Alic style post caption here...",
+  "caption": "Full LinkedIn caption here...",
   "hashtags": ["#AI", "#Marketing", ...]
 }
 (For the 'icon' field, provide ONLY a valid singular standard Lucide icon name that fits the slide's theme, e.g. 'rocket', 'brain', 'target', 'trending-up', 'check-circle', 'shield', 'zap', 'lightbulb', 'users'.)`;
@@ -72,9 +88,9 @@ RESPOND ONLY WITH VALID JSON in this exact format:
  * @returns {Promise<Object>} Structured carousel copy JSON
  */
 async function generateCarouselCopy(trend) {
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✍️  COPYWRITING ENGINE');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console.log('\n========================');
+    console.log('COPYWRITING ENGINE');
+    console.log('========================\n');
 
     // Pick a random creative angle to force variety
     const angles = [
@@ -85,15 +101,15 @@ async function generateCarouselCopy(trend) {
     ];
     const chosenAngle = angles[Math.floor(Math.random() * angles.length)];
 
-    const prompt = `Create a viral LinkedIn carousel (EXACTLY 10 slides) about this trending topic:
+    const prompt = `Create a high-performing LinkedIn carousel (EXACTLY 10 slides) about this trending topic:
 
 TOPIC: ${trend.title}
 CONTEXT: ${trend.context || 'No additional context'}
 SOURCE: ${trend.meta || trend.source}
 
-CREATIVE ANGLE: Use a "${chosenAngle}" approach. Do NOT just summarize the topic — find a surprising, unique, or provocative angle that makes people stop scrolling.
+CREATIVE ANGLE: Use a "${chosenAngle}" approach. Do NOT just summarize the topic - find a surprising, specific, and non-obvious angle that stops the scroll.
 
-The carousel should educate, inspire, and drive engagement. Make it relevant for professionals, entrepreneurs, and creators on LinkedIn. Use the AIDA framework to structure the slides.
+The carousel should educate business owners on the psychology of design and drive engagement. Use specific psychological principles, and frame the problem around losing high-quality clients or leaking revenue. The ultimate point of the carousel is to show how a psychologically-optimized website serves as an engine to get *more clients* and *higher quality clients*. Provide concrete actions they can take to stop bleeding leads.
 
 Remember: respond ONLY with valid JSON.`;
 
@@ -121,49 +137,48 @@ Remember: respond ONLY with valid JSON.`;
             const modelId = orModels[(startIdx + i) % orModels.length];
             console.log(`   Trying OpenRouter (${modelId})...`);
             try {
-                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                    method: "POST",
+                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${openRouterKey}`,
-                        "HTTP-Referer": "https://github.com/carousel-automation",
-                        "X-Title": "Carousel Automation AI",
-                        "Content-Type": "application/json"
+                        'Authorization': `Bearer ${openRouterKey}`,
+                        'HTTP-Referer': 'https://github.com/carousel-automation',
+                        'X-Title': 'Carousel Automation AI',
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        "model": modelId,
-                        "messages": [
-                            { "role": "system", "content": SYSTEM_PROMPT },
-                            { "role": "user", "content": prompt }
+                        model: modelId,
+                        messages: [
+                            { role: 'system', content: SYSTEM_PROMPT },
+                            { role: 'user', content: prompt }
                         ]
                     })
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    const raw = data.choices?.[0]?.message?.content || "";
-                    // Some models wrap JSON in <think>...</think> tags — strip those
+                    const raw = data.choices?.[0]?.message?.content || '';
+                    // Some models wrap JSON in <think>...</think> tags - strip those
                     text = raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
                     if (text) {
-                        console.log(`   ✅ OpenRouter (${modelId}) responded successfully`);
+                        console.log(`   OpenRouter (${modelId}) responded successfully`);
                     } else {
-                        console.log(`   ⚠️  OpenRouter (${modelId}) returned empty, trying next...`);
+                        console.log(`   OpenRouter (${modelId}) returned empty, trying next...`);
                     }
                 } else {
                     const errBody = await res.text();
-                    console.log(`   ⚠️  OpenRouter (${modelId}) failed: ${res.status} — ${errBody.slice(0, 100)}`);
+                    console.log(`   OpenRouter (${modelId}) failed: ${res.status} - ${errBody.slice(0, 100)}`);
                 }
             } catch (err) {
-                console.log(`   ⚠️  OpenRouter (${modelId}) error: ${err.message}`);
+                console.log(`   OpenRouter (${modelId}) error: ${err.message}`);
             }
         }
     }
 
     // 2. Fallback to Gemini
     if (googleKey && !text) {
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(googleKey);
 
-        // Try multiple models — each has separate daily quota on free tier
+        // Try multiple models - each has separate daily quota on free tier
         const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'];
 
         for (const modelName of models) {
@@ -186,18 +201,18 @@ Remember: respond ONLY with valid JSON.`;
                         },
                     });
                     text = result.response.text();
-                    console.log(`   ✅ ${modelName} responded successfully`);
+                    console.log(`   ${modelName} responded successfully`);
                     break;
                 } catch (err) {
                     if (err.message && err.message.includes('429') && attempt < maxRetries) {
                         const waitSec = 20 * attempt;
-                        console.log(`   ⏳ Rate limited on ${modelName}. Retrying in ${waitSec}s...`);
+                        console.log(`   Rate limited on ${modelName}. Retrying in ${waitSec}s...`);
                         await new Promise(r => setTimeout(r, waitSec * 1000));
                     } else if (err.message && err.message.includes('429')) {
-                        console.log(`   ⚠️  ${modelName} quota exhausted, trying next model...`);
+                        console.log(`   ${modelName} quota exhausted, trying next model...`);
                         break;
                     } else {
-                        console.log(`   ⚠️  ${modelName} failed, trying next...`);
+                        console.log(`   ${modelName} failed, trying next...`);
                         break;
                     }
                 }
@@ -221,7 +236,7 @@ Remember: respond ONLY with valid JSON.`;
             max_completion_tokens: 2000,
             response_format: { type: 'json_object' }
         });
-        text = result.choices[0]?.message?.content || "";
+        text = result.choices[0]?.message?.content || '';
     }
 
     if (!text) {
@@ -240,7 +255,7 @@ Remember: respond ONLY with valid JSON.`;
         }
     }
 
-    console.log(`   ✅ Generated ${carouselData.slides?.length || 0} slides`);
+    console.log(`   Generated ${carouselData.slides?.length || 0} slides`);
     console.log(`   Hook: "${carouselData.hook || carouselData.slides?.[0]?.headline}"`);
 
     return carouselData;
